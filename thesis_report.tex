@@ -1,4 +1,4 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[12pt,a4paper,twocolumn]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -13,6 +13,9 @@
 \usepackage{subcaption}
 \usepackage{cite}
 \usepackage{url}
+\usepackage{multicol}
+\usepackage{balance}
+\usepackage{abstract}
 
 \geometry{margin=1in}
 
@@ -97,11 +100,137 @@ We constructed a comprehensive dataset consisting of:
     \item \textbf{Vulnerability Types}: 9 CWE categories including buffer overflows, use-after-free, integer overflows
 \end{itemize}
 
-\subsection{Analysis Pipeline}
+\subsection{KLEE Symbolic Execution Framework}
 
-The analysis pipeline follows these steps:
+KLEE (KLEE Symbolic Virtual Machine) is a symbolic execution engine that explores all possible execution paths of a program by treating inputs as symbolic variables rather than concrete values. Our implementation leverages KLEE's capabilities for comprehensive vulnerability detection in Rust code.
 
-\begin{lstlisting}[language=Python, caption=Analysis Pipeline Overview]
+\subsubsection{KLEE Architecture and Components}
+
+KLEE operates on LLVM bitcode, making it compatible with Rust through the LLVM toolchain. The core components include:
+
+\begin{itemize}
+    \item \textbf{Symbolic State Manager}: Maintains symbolic memory and register states
+    \item \textbf{Constraint Solver}: Uses STP or Z3 for path constraint solving
+    \item \textbf{Execution Engine}: Interprets LLVM instructions symbolically
+    \item \textbf{Path Explorer}: Manages execution tree and path selection
+\end{itemize}
+
+\subsubsection{Rust-Specific KLEE Adaptations}
+
+For Rust code analysis, we implement several adaptations:
+
+\begin{lstlisting}[language=C, caption=KLEE Wrapper for Rust FFI]
+#include <klee/klee.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+// Rust FFI function declarations
+extern int32_t rust_function(int32_t input, uint8_t* buffer, size_t len);
+
+int main() {
+    // Symbolic inputs
+    int32_t symbolic_input;
+    uint8_t* symbolic_buffer;
+    size_t symbolic_len;
+    
+    // Make inputs symbolic
+    klee_make_symbolic(&symbolic_input, sizeof(symbolic_input), "input");
+    klee_make_symbolic(&symbolic_len, sizeof(symbolic_len), "len");
+    symbolic_buffer = malloc(symbolic_len);
+    klee_make_symbolic(symbolic_buffer, symbolic_len, "buffer");
+    
+    // Add constraints
+    klee_assume(symbolic_len > 0 && symbolic_len < 1024);
+    klee_assume(symbolic_input >= 0 && symbolic_input < 1000);
+    
+    // Call Rust function
+    int32_t result = rust_function(symbolic_input, symbolic_buffer, symbolic_len);
+    
+    // Check for vulnerabilities
+    if (result < 0) {
+        klee_report_error("negative_result", result, "Function returned negative value", 0);
+    }
+    
+    return 0;
+}
+\end{lstlisting}
+
+\subsubsection{KLEE Configuration and Optimization}
+
+Our KLEE configuration is optimized for Rust vulnerability detection:
+
+\begin{itemize}
+    \item \textbf{Timeout}: 60 seconds per analysis to balance thoroughness and performance
+    \item \textbf{Memory Limit}: 1GB to handle complex Rust data structures
+    \item \textbf{Max Instructions}: 10,000 to prevent infinite loops
+    \item \textbf{Max Tests}: 1,000 test cases for comprehensive coverage
+    \item \textbf{Solver}: STP for constraint solving with timeout of 30 seconds
+\end{itemize}
+
+\subsection{LibFuzzer Dynamic Analysis Framework}
+
+LibFuzzer is a coverage-guided fuzzing engine that generates test inputs to maximize code coverage. Our implementation uses LibFuzzer for dynamic analysis of Rust code, complementing KLEE's symbolic execution.
+
+\subsubsection{LibFuzzer Architecture}
+
+LibFuzzer operates through the following components:
+
+\begin{itemize}
+    \item \textbf{Mutation Engine}: Generates new test cases through mutation
+    \item \textbf{Coverage Tracker}: Monitors code coverage using instrumentation
+    \item \textbf{Input Corpus}: Maintains a set of interesting test cases
+    \item \textbf{Crash Detector}: Identifies crashes, hangs, and memory errors
+\end{itemize}
+
+\subsubsection{Rust Fuzzing Harness}
+
+Our Rust fuzzing harness is designed to work with LibFuzzer:
+
+\begin{lstlisting}[language=Rust, caption=Rust LibFuzzer Harness]
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+
+// Import the function to be fuzzed
+extern "C" {
+    fn rust_function(input: i32, buffer: *const u8, len: usize) -> i32;
+}
+
+fuzz_target!(|data: &[u8]| {
+    if data.len() < 4 {
+        return;
+    }
+    
+    // Parse input from fuzzer data
+    let input = i32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    let buffer = &data[4..];
+    
+    // Call the function under test
+    unsafe {
+        let result = rust_function(input, buffer.as_ptr(), buffer.len());
+        
+        // Check for potential vulnerabilities
+        if result < 0 {
+            panic!("Negative result detected: {}", result);
+        }
+    }
+});
+\end{lstlisting}
+
+\subsubsection{Multi-Strategy Fuzzing Approach}
+
+We implement a multi-strategy approach to ensure robust fuzzing:
+
+\begin{enumerate}
+    \item \textbf{Rust Native Fuzzing}: Direct Rust compilation with LibFuzzer
+    \item \textbf{C Wrapper Fuzzing}: C wrapper for LibFuzzer compatibility
+    \item \textbf{Bash Fallback Fuzzing}: Script-based fuzzing when compilation fails
+\end{enumerate}
+
+\subsection{Hybrid Analysis Pipeline}
+
+The complete analysis pipeline integrates both KLEE and LibFuzzer:
+
+\begin{lstlisting}[language=Python, caption=Complete Hybrid Analysis Pipeline]
 def run_hybrid_analysis(rust_code):
     # 1. Generate FFI wrapper using LLM
     ffi_code = generate_rust_ffi_wrapper(rust_code)
@@ -118,6 +247,39 @@ def run_hybrid_analysis(rust_code):
     
     # 5. Fuse results
     return fuse_analysis_results(klee_results, fuzz_results)
+
+def run_klee_analysis(klee_wrapper):
+    # Compile to LLVM bitcode
+    compile_cmd = f"clang -emit-llvm -c {klee_wrapper} -o wrapper.bc"
+    subprocess.run(compile_cmd, shell=True)
+    
+    # Run KLEE with optimized parameters
+    klee_cmd = "timeout 60s klee --max-time=60 --max-memory=1024 " \
+               "--max-instructions=10000 --max-tests=1000 wrapper.bc"
+    result = subprocess.run(klee_cmd, shell=True, capture_output=True)
+    
+    # Parse KLEE results
+    return parse_klee_output(result.stdout, result.stderr)
+
+def run_fuzzing_analysis(fuzz_harness):
+    # Try Rust compilation first
+    try:
+        rust_cmd = f"cargo fuzz run {fuzz_harness} -- -max_total_time=60"
+        result = subprocess.run(rust_cmd, shell=True, capture_output=True)
+        return parse_fuzz_output(result.stdout, result.stderr)
+    except:
+        # Fallback to C compilation
+        try:
+            c_cmd = f"clang -fsanitize=address -fsanitize-coverage=trace-pc-guard " \
+                   f"{fuzz_harness} -o fuzzer"
+            subprocess.run(c_cmd, shell=True)
+            
+            fuzz_cmd = "./fuzzer -max_total_time=60"
+            result = subprocess.run(fuzz_cmd, shell=True, capture_output=True)
+            return parse_fuzz_output(result.stdout, result.stderr)
+        except:
+            # Final fallback to bash script
+            return run_bash_fuzzer(fuzz_harness)
 \end{lstlisting}
 
 \section{Experimental Setup}
@@ -200,40 +362,274 @@ Our approach significantly outperforms traditional analysis methods:
 
 \section{Technical Implementation}
 
-\subsection{LLM Integration}
+\subsection{LLM Integration for Wrapper Generation}
 
-We leverage OpenAI's GPT models for automated wrapper generation:
+We leverage OpenAI's GPT models for automated wrapper generation, implementing a two-stage process to ensure compatibility with both KLEE and LibFuzzer.
 
-\begin{lstlisting}[language=Python, caption=LLM Wrapper Generation]
+\subsubsection{Stage 1: Rust FFI Wrapper Generation}
+
+The first stage converts raw Rust code to FFI-compatible format:
+
+\begin{lstlisting}[language=Python, caption=LLM FFI Wrapper Generation]
 def generate_rust_ffi_wrapper(rust_code, api_key):
     prompt = f"""
-    Convert this Rust code to FFI-compatible format:
-    - Add pub extern "C" functions
-    - Include #[no_mangle] attributes
-    - Ensure memory safety
+    Convert this Rust code to FFI-compatible format for vulnerability analysis:
+    
+    Requirements:
+    - Add pub extern "C" functions for all public functions
+    - Include #[no_mangle] attributes for C compatibility
+    - Ensure memory safety with proper lifetime management
+    - Add input validation and bounds checking
+    - Handle potential panics gracefully
+    
+    Original Rust code:
     {rust_code}
+    
+    Generate FFI-compatible Rust code that can be called from C.
+    """
+    
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}],
+        api_key=api_key,
+        temperature=0.1
+    )
+    
+    return response.choices[0].message.content
+\end{lstlisting}
+
+\subsubsection{Stage 2: Analysis-Specific Wrapper Generation}
+
+The second stage generates analysis-specific wrappers:
+
+\begin{lstlisting}[language=Python, caption=Analysis Wrapper Generation]
+def generate_klee_wrapper(ffi_code, api_key):
+    prompt = f"""
+    Generate a KLEE C wrapper for this FFI Rust code:
+    
+    {ffi_code}
+    
+    Requirements:
+    - Include klee.h headers
+    - Make all inputs symbolic using klee_make_symbolic
+    - Add appropriate constraints with klee_assume
+    - Include vulnerability checks with klee_report_error
+    - Handle all function parameters symbolically
+    """
+    return call_openai_api(prompt, api_key)
+
+def generate_fuzz_wrapper(ffi_code, api_key):
+    prompt = f"""
+    Generate a LibFuzzer harness for this FFI Rust code:
+    
+    {ffi_code}
+    
+    Requirements:
+    - Use libfuzzer_sys crate
+    - Implement fuzz_target! macro
+    - Parse fuzzer input data appropriately
+    - Include crash detection and error handling
+    - Maximize code coverage
     """
     return call_openai_api(prompt, api_key)
 \end{lstlisting}
 
-\subsection{KLEE Integration}
+\subsection{KLEE Symbolic Execution Implementation}
 
-Our KLEE analysis uses optimized parameters:
+Our KLEE implementation is specifically optimized for Rust vulnerability detection.
 
-\begin{lstlisting}[language=bash, caption=KLEE Execution Command]
-timeout 60s klee --max-time=60 --max-memory=1024 \
-  --max-instructions=10000 --max-tests=1000 final_code.bc
+\subsubsection{KLEE Compilation Pipeline}
+
+\begin{lstlisting}[language=bash, caption=KLEE Compilation and Execution]
+# 1. Compile Rust to LLVM bitcode
+rustc --emit=llvm-bc --crate-type=lib rust_code.rs -o rust_code.bc
+
+# 2. Compile C wrapper to LLVM bitcode
+clang -emit-llvm -c klee_wrapper.c -o klee_wrapper.bc
+
+# 3. Link bitcode files
+llvm-link rust_code.bc klee_wrapper.bc -o linked.bc
+
+# 4. Optimize bitcode
+opt -O3 linked.bc -o optimized.bc
+
+# 5. Run KLEE with optimized parameters
+timeout 60s klee \
+  --max-time=60 \
+  --max-memory=1024 \
+  --max-instructions=10000 \
+  --max-tests=1000 \
+  --solver-timeout=30 \
+  --use-query-log=all \
+  --use-cache=false \
+  optimized.bc
 \end{lstlisting}
 
-\subsection{LibFuzzer Integration}
+\subsubsection{KLEE Result Analysis}
 
-We implement multiple fallback strategies for robust fuzzing:
+\begin{lstlisting}[language=Python, caption=KLEE Output Parsing]
+def parse_klee_output(klee_dir):
+    results = {
+        'test_cases': 0,
+        'errors': 0,
+        'warnings': 0,
+        'coverage': 0,
+        'vulnerabilities': []
+    }
+    
+    # Parse test case count
+    test_files = glob.glob(f"{klee_dir}/test*.ktest")
+    results['test_cases'] = len(test_files)
+    
+    # Parse error reports
+    error_files = glob.glob(f"{klee_dir}/*.err")
+    for error_file in error_files:
+        with open(error_file, 'r') as f:
+            error_content = f.read()
+            if "klee_report_error" in error_content:
+                results['errors'] += 1
+                results['vulnerabilities'].append(parse_vulnerability(error_content))
+    
+    # Parse coverage information
+    coverage_file = f"{klee_dir}/run.istats"
+    if os.path.exists(coverage_file):
+        results['coverage'] = parse_coverage_stats(coverage_file)
+    
+    return results
+\end{lstlisting}
 
-\begin{enumerate}
-    \item \textbf{Rust Compilation}: Direct Rust fuzzing harness
-    \item \textbf{C Compilation}: C wrapper for LibFuzzer
-    \item \textbf{Bash Fallback}: Script-based fuzzing when compilation fails
-\end{enumerate}
+\subsection{LibFuzzer Dynamic Analysis Implementation}
+
+Our LibFuzzer implementation uses multiple strategies to ensure comprehensive coverage.
+
+\subsubsection{Rust Native Fuzzing}
+
+\begin{lstlisting}[language=bash, caption=Rust Native Fuzzing Setup]
+# Initialize cargo fuzz
+cargo install cargo-fuzz
+cargo fuzz init
+
+# Add fuzz target
+cat > fuzz_targets/fuzz_target.rs << 'EOF'
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+
+extern "C" {
+    fn rust_function(input: i32, buffer: *const u8, len: usize) -> i32;
+}
+
+fuzz_target!(|data: &[u8]| {
+    if data.len() < 4 { return; }
+    
+    let input = i32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    let buffer = &data[4..];
+    
+    unsafe {
+        let result = rust_function(input, buffer.as_ptr(), buffer.len());
+        if result < 0 {
+            panic!("Vulnerability detected: {}", result);
+        }
+    }
+});
+EOF
+
+# Run fuzzing
+cargo fuzz run fuzz_target -- -max_total_time=60 -max_len=1024
+\end{lstlisting}
+
+\subsubsection{C Wrapper Fuzzing}
+
+\begin{lstlisting}[language=bash, caption=C Wrapper Fuzzing Setup]
+# Compile with sanitizers
+clang -fsanitize=address \
+      -fsanitize-coverage=trace-pc-guard,trace-cmp \
+      -fno-omit-frame-pointer \
+      -g \
+      fuzz_wrapper.c \
+      -o fuzzer
+
+# Run fuzzing
+./fuzzer -max_total_time=60 -max_len=1024
+\end{lstlisting}
+
+\subsubsection{Bash Fallback Fuzzing}
+
+\begin{lstlisting}[language=bash, caption=Bash Fallback Fuzzing]
+#!/bin/bash
+# Fallback fuzzing when compilation fails
+
+FUZZER_OUTPUT="fuzzer_output.txt"
+EXECUTIONS=0
+CRASHES=0
+
+for i in {1..1000}; do
+    # Generate random input
+    INPUT_SIZE=$((RANDOM % 1000 + 1))
+    RANDOM_INPUT=$(head -c $INPUT_SIZE /dev/urandom | base64)
+    
+    # Call function with random input
+    echo "$RANDOM_INPUT" | timeout 1s ./test_function 2>&1 | tee -a $FUZZER_OUTPUT
+    
+    EXECUTIONS=$((EXECUTIONS + 1))
+    
+    # Check for crashes
+    if grep -q "SIGSEGV\|SIGABRT\|panic" $FUZZER_OUTPUT; then
+        CRASHES=$((CRASHES + 1))
+    fi
+done
+
+echo "Executions: $EXECUTIONS, Crashes: $CRASHES"
+\end{lstlisting}
+
+\subsection{Hybrid Result Fusion}
+
+The final step combines results from both KLEE and LibFuzzer:
+
+\begin{lstlisting}[language=Python, caption=Result Fusion Algorithm]
+def fuse_analysis_results(klee_results, fuzz_results):
+    fused_results = {
+        'total_vulnerabilities': 0,
+        'vulnerability_types': set(),
+        'confidence_scores': {},
+        'coverage_metrics': {},
+        'performance_metrics': {}
+    }
+    
+    # Combine vulnerability detections
+    klee_vulns = klee_results.get('vulnerabilities', [])
+    fuzz_vulns = fuzz_results.get('crashes', [])
+    
+    # Merge vulnerability lists
+    all_vulnerabilities = klee_vulns + fuzz_vulns
+    fused_results['total_vulnerabilities'] = len(all_vulnerabilities)
+    
+    # Calculate confidence scores
+    for vuln in all_vulnerabilities:
+        vuln_type = vuln.get('type', 'unknown')
+        fused_results['vulnerability_types'].add(vuln_type)
+        
+        # Higher confidence if detected by both tools
+        confidence = 0.5
+        if vuln in klee_vulns and vuln in fuzz_vulns:
+            confidence = 0.9
+        elif vuln in klee_vulns:
+            confidence = 0.7
+        elif vuln in fuzz_vulns:
+            confidence = 0.6
+            
+        fused_results['confidence_scores'][vuln['id']] = confidence
+    
+    # Combine coverage metrics
+    klee_coverage = klee_results.get('coverage', 0)
+    fuzz_coverage = fuzz_results.get('coverage', 0)
+    fused_results['coverage_metrics'] = {
+        'klee_coverage': klee_coverage,
+        'fuzz_coverage': fuzz_coverage,
+        'combined_coverage': max(klee_coverage, fuzz_coverage)
+    }
+    
+    return fused_results
+\end{lstlisting}
 
 \section{Discussion}
 
@@ -339,4 +735,5 @@ python3 setup.py
 python3 simple_comprehensive_analyzer.py
 \end{lstlisting}
 
+\balance
 \end{document}
