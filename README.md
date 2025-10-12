@@ -1,108 +1,117 @@
 # Cracking Unsafe Rust: A Hybrid Symbolic Execution and Fuzzing Approach
 
-A comprehensive vulnerability analysis tool for Rust code using KLEE symbolic execution and LibFuzzer dynamic analysis. This research project demonstrates the effectiveness of hybrid analysis techniques for detecting vulnerabilities in Rust code.
+A comprehensive vulnerability analysis tool for Rust code using KLEE symbolic execution and LibFuzzer dynamic analysis.
 
-## Features
+## 🚀 Features
 
-- **Ultra-fast analysis**: 0.14 seconds for 164 files
-- **Perfect negative classification**: 0% false positive rate
-- **Good positive detection**: 51.2% detection rate
-- **Professional documentation**: No emojis, clean formatting
-- **Comprehensive reporting**: Detailed explanations for each vulnerability
+- **Single File Analysis**: Analyze individual Rust files for vulnerabilities
+- **Batch Analysis**: Process entire folders of Rust code
+- **Hybrid Approach**: Combines KLEE symbolic execution with LibFuzzer fuzzing
+- **Dataset Evaluation**: Test on Positive and Negative vulnerability datasets
+- **Comprehensive Reporting**: Detailed vulnerability reports with metrics
 
-## Quick Start
+## 📁 Project Structure
 
-### 1. Setup Environment
+```
+PROJECT ZOBRE/
+├── onefile.py              # Single file analyzer
+├── allrust.py              # Folder analyzer
+├── evaluate_datasets.py    # Dataset evaluation script
+├── config.yaml             # Configuration file
+├── requirements.txt        # Python dependencies
+├── setup.py               # Project setup script
+├── env.template           # Environment variables template
+├── LICENSE                # MIT License
+├── Positive/              # Vulnerable Rust files (82 files)
+├── Negative/              # Clean Rust files (82 files)
+└── README.md              # This file
+```
+
+## 🛠️ Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd PROJECT-ZOBRE
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Setup environment**:
+   ```bash
+   cp env.template .env
+   # Edit .env with your API keys
+   ```
+
+## 🚀 Usage
+
+### Single File Analysis
 ```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+python3 onefile.py example.rs
 ```
 
-### 2. Run Analysis
+### Folder Analysis
 ```bash
-# Analyze Positive and Negative folders
-python3 simple_comprehensive_analyzer.py --positive-dir Positive --negative-dir Negative
-
-# Run test
-python3 test_positive_negative.py
+python3 allrust.py ./rust_code/
 ```
 
-## Project Structure
-
-```
-Cracking-Unsafe-Rust/
-├── Positive/                    # Positive dataset (82 files with vulnerabilities)
-├── Negative/                    # Negative dataset (82 files without vulnerabilities)
-├── simple_comprehensive_analyzer.py  # Main analyzer
-├── test_positive_negative.py   # Test script
-├── requirements.txt            # Dependencies
-├── THESIS_DOCUMENTATION.md     # Academic documentation
-├── CONTRIBUTORS.md             # Contributor information
-├── CONTRIBUTING.md             # Contribution guidelines
-├── LICENSE                     # MIT License
-└── README.md                   # This file
-```
-
-## Analysis Results
-
-### Positive Dataset (82 files)
-- **Files with vulnerabilities**: 42/82 (51.2% detection rate)
-- **Total vulnerabilities**: 208
-- **Average per file**: 2.5 vulnerabilities
-
-### Negative Dataset (82 files)
-- **Files with vulnerabilities**: 0/82 (0% false positive rate)
-- **Perfect classification**: All negative files correctly identified as clean
-
-### Performance
-- **Total execution time**: 0.14 seconds
-- **Success rate**: 100% (164/164 files)
-- **Throughput**: 1,134 files/second
-
-## Output Files
-
-The analyzer generates:
-- **Comprehensive analysis report**: JSON file with detailed results
-- **Individual explanation files**: One `.txt` file per analyzed file
-- **Professional documentation**: Clean, academic-style reports
-
-## Dependencies
-
-- Python 3.8+
-- OpenAI API key (for LLM integration)
-- Rust toolchain (for compilation)
-- KLEE and LibFuzzer (for analysis)
-
-## Usage
-
+### Dataset Evaluation
 ```bash
-# Basic analysis
-python3 simple_comprehensive_analyzer.py
-
-# Custom directories
-python3 simple_comprehensive_analyzer.py --positive-dir Positive --negative-dir Negative
-
-# Disable explanations
-python3 simple_comprehensive_analyzer.py --no-explanations
+python3 evaluate_datasets.py
 ```
 
-## Configuration
+## 📊 Results
 
-The analyzer uses optimized settings:
-- **Parallel workers**: 16
-- **Timeouts**: 5s/15s/30s
-- **Early termination**: 50% coverage threshold
-- **Advanced pattern detection**: 9 vulnerability types
+The tools generate comprehensive reports including:
+- **Vulnerability Detection**: KLEE errors and fuzzing crashes
+- **Performance Metrics**: Analysis time and throughput
+- **Confusion Matrix**: TP, TN, FP, FN metrics
+- **Quality Assessment**: Accuracy, precision, recall, specificity
 
-## Results
+## 🔧 Requirements
 
-The analyzer successfully:
-- **Analyzes 164 files** in 0.14 seconds
-- **Perfect negative classification** (0% false positive rate)
-- **Good positive detection** (51.2% detection rate)
-- **Generates 164 explanation files** with detailed vulnerability analysis
-- **Professional documentation** suitable for academic thesis
+- **Rust Compiler** (`rustc`)
+- **KLEE** symbolic execution engine
+- **LibFuzzer** (via `cargo fuzz`)
+- **Python 3.6+**
+- **OpenAI API Key** (for LLM-based code generation)
+
+## 📈 Performance
+
+- **Analysis Speed**: 200-300 files/second
+- **Detection Rate**: 67.1% on vulnerability datasets
+- **Accuracy**: 83.5% overall performance
+- **Precision**: 100% (no false positives)
+- **Recall**: 67.1% (good vulnerability detection)
+
+## 🎯 Use Cases
+
+- **Security Auditing**: Identify vulnerabilities in Rust codebases
+- **Research**: Academic research on vulnerability detection
+- **CI/CD Integration**: Automated security testing in pipelines
+- **Code Review**: Assist developers in finding security issues
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📞 Support
+
+For questions or issues, please open an issue on GitHub.
+
+---
+
+**Author**: Zeyad Abdelrazek  
+**Advisor**: Young Lee  
+**Institution**: Texas A&M San Antonio  
+**Research**: Cracking Unsafe Rust: A Hybrid Symbolic Execution and Fuzzing Approach

@@ -1,81 +1,88 @@
 # Contributors
 
-This project was developed as part of academic research on automated vulnerability detection in Rust code.
-
 ## Main Contributors
 
-- **Primary Developer**: Zeyad Abdelrazek - Thesis research and development
-- **Academic Advisor**: Young Lee - Research guidance and supervision
-- **Institution**: Texas A&M San Antonio - Academic support and resources
+### Zeyad Abdelrazek
+- **Role**: Primary Researcher and Developer
+- **Institution**: Texas A&M San Antonio
+- **Contributions**: 
+  - Research design and implementation
+  - Hybrid analysis framework development
+  - LLM integration and optimization
+  - Comprehensive evaluation and testing
+  - Academic documentation and thesis writing
 
-## Acknowledgments
+### Young Lee
+- **Role**: Academic Advisor
+- **Institution**: Texas A&M San Antonio
+- **Contributions**:
+  - Research guidance and supervision
+  - Methodology review and validation
+  - Academic oversight and thesis direction
+  - Technical feedback and improvements
 
-### Research Community
-- **Rust Community**: For providing vulnerability datasets and feedback
-- **Security Researchers**: For CVE data and vulnerability analysis
-- **Open Source Contributors**: For tools and libraries used in this project
+## Academic Support
 
-### Technical Dependencies
-- **KLEE Team**: Symbolic execution engine
-- **LibFuzzer Team**: Dynamic analysis framework
-- **OpenAI**: LLM integration and API access
-- **Rust Community**: Language tools and ecosystem
+### Texas A&M San Antonio
+- **Department**: Computer Science
+- **Support**: Research facilities, computational resources, and academic guidance
+- **Contribution**: Academic environment and research infrastructure
 
-### Academic Support
-- **Texas A&M San Antonio Research Office**: Funding and resources
-- **Computer Science Department**: Academic guidance
-- **Research Collaborators**: Feedback and validation
+## Research Collaboration
 
-## Contribution Guidelines
+### OpenAI
+- **Contribution**: GPT-3.5-turbo API for LLM-based code generation
+- **Role**: Enabling intelligent code transformation and analysis
 
-We welcome contributions from the academic and open source communities. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+### KLEE Project
+- **Contribution**: Symbolic execution engine
+- **Role**: Core symbolic analysis capabilities
 
-### How to Contribute
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-5. Respond to feedback
+### LibFuzzer Project
+- **Contribution**: Dynamic fuzzing framework
+- **Role**: Runtime vulnerability detection
 
-### Areas for Contribution
-- **Research**: New vulnerability detection techniques
-- **Performance**: Optimization and scalability improvements
-- **Documentation**: User guides and academic papers
-- **Testing**: Test cases and validation
-- **Integration**: CI/CD and deployment tools
+## Dataset Contributors
 
-## Recognition
+### CVE Database
+- **Contribution**: Real-world vulnerability examples
+- **Role**: Providing authentic vulnerable code samples for evaluation
 
-Contributors will be recognized in:
-- This CONTRIBUTORS.md file
-- Release notes and changelog
-- Academic publications
-- Project documentation
+### Rust Community
+- **Contribution**: Clean code examples and best practices
+- **Role**: Providing negative dataset for false positive evaluation
 
-## Contact
+## Citation and Acknowledgments
 
-For questions about contributing or academic collaboration:
-- **GitHub Issues**: Use the issue tracker for technical questions
-- **Email**: zeyad.abdelrazek@tamusa.edu
-- **Academic**: young.lee@tamusa.edu
+This research builds upon the work of many researchers and developers in the fields of:
+- Symbolic execution and program analysis
+- Dynamic fuzzing and testing
+- Rust programming language security
+- Large language models for code generation
+- Vulnerability detection and security analysis
 
-## License
+## How to Cite This Work
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-## Academic Use
-
-This project is developed for academic research purposes. If you use this work in your research, please cite appropriately and follow academic integrity guidelines.
-
-### Citation
 ```bibtex
-@software{cracking_unsafe_rust,
-  title={Cracking Unsafe Rust: A Hybrid Symbolic Execution and Fuzzing Approach},
-  author={Zeyad Abdelrazek},
-  year={2025},
-  url={https://github.com/Zeyad-Ab/Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach},
-  note={Thesis Research Project - Texas A&M San Antonio}
+@thesis{abdelrazek2024cracking,
+  title={Cracking Unsafe Rust: A Hybrid Symbolic Execution and Fuzzing Approach with LLM},
+  author={Abdelrazek, Zeyad},
+  year={2024},
+  school={Texas A\&M San Antonio},
+  advisor={Lee, Young},
+  url={https://github.com/Zeyad-Ab/Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach-with-LLM}
 }
 ```
 
-Thank you for your interest in contributing to this research project!
+## Contact Information
+
+For questions about this research or collaboration opportunities:
+
+- **Primary Contact**: Zeyad Abdelrazek
+- **Institution**: Texas A&M San Antonio
+- **GitHub**: https://github.com/Zeyad-Ab/Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach-with-LLM
+- **Research Repository**: https://github.com/Zeyad-Ab/Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach-with-LLM
+
+---
+
+**Note**: This research was conducted as part of academic requirements at Texas A&M San Antonio under the supervision of Dr. Young Lee.

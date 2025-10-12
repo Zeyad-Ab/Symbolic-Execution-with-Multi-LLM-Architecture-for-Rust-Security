@@ -16,8 +16,6 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -29,13 +27,6 @@ env/
 ENV/
 env.bak/
 venv.bak/
-
-# Environment Variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # IDE
 .vscode/
@@ -54,59 +45,65 @@ ehthumbs.db
 Thumbs.db
 
 # Analysis Results
+results/
+reports/
+temp/
 *.json
 *.html
-*.txt
-!requirements.txt
-!README.md
-!LICENSE
-!CONTRIBUTING.md
-!*.template
+*.pdf
+*.log
 
-# KLEE and Fuzzing
-klee-*
+# KLEE and Fuzzing Artifacts
+*.ktest
+*.err
+*.trace
 *.bc
 *.ll
 *.o
-*.so
 *.a
-crash-*
-leak-*
-timeout-*
-slow-unit-*
+*.so
+*.dylib
+*.exe
+*.out
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # SSH Keys
-*.pem
-*.key
-id_rsa*
-id_ed25519*
+gcp_key
+gcp_key.pub
+known_hosts
+known_hosts.old
 
-# Logs
-*.log
-logs/
+# Rust
+target/
+Cargo.lock
+fuzz/
 
-# Temporary files
-tmp/
-temp/
+# Temporary Files
 *.tmp
 *.temp
+*.bak
+*.backup
 
-# Jupyter Notebooks
-.ipynb_checkpoints/
-
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
+# Academic Work (keep these)
+# README.md
+# THESIS_DOCUMENTATION.md
+# CONTRIBUTORS.md
+# CONTRIBUTING.md
+# GITHUB_SETUP.md
+# LICENSE
+# onefile.py
+# allrust.py
+# evaluate_datasets.py
+# setup.py
+# test_setup.py
+# requirements.txt
+# config.yaml
+# env.template
+# Positive/
+# Negative/
