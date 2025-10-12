@@ -121,7 +121,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 **Author**: Zeyad Abdelrazek  
-**Email**: [Your Email]  
+**Email**: zgad01@jaguar.tamu.edu  
 **Institution**: Texas A&M San Antonio  
 **Advisor**: Young Lee  
 **GitHub**: https://github.com/Zeyad-Ab/Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach-with-LLM

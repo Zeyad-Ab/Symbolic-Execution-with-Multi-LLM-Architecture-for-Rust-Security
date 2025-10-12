@@ -194,7 +194,7 @@ python3 evaluate_datasets.py
 - **Name**: Zeyad Abdelrazek
 - **Institution**: Texas A&M San Antonio
 - **GitHub**: @Zeyad-Ab
-- **Email**: [Your Email]
+- **Email**: zgad01@jaguar.tamu.edu
 
 ### Academic Advisor
 - **Name**: Young Lee

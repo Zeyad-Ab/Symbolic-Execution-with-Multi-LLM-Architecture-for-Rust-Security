@@ -79,6 +79,7 @@ This research builds upon the work of many researchers and developers in the fie
 For questions about this research or collaboration opportunities:
 
 - **Primary Contact**: Zeyad Abdelrazek
+- **Email**: zgad01@jaguar.tamu.edu
 - **Institution**: Texas A&M San Antonio
 - **GitHub**: https://github.com/Zeyad-Ab/Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach-with-LLM
 - **Research Repository**: https://github.com/Zeyad-Ab/Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach-with-LLM
