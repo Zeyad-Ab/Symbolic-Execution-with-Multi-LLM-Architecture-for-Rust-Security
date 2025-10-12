@@ -30,7 +30,7 @@ git push -u origin main
 ## Repository Structure
 
 ```
-Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach-with-LLM/
+fuzzing+klee/
 ├── README.md                    # Project overview and documentation
 ├── THESIS_DOCUMENTATION.md      # Academic documentation
 ├── CONTRIBUTORS.md              # Contributors and acknowledgments

@@ -13,7 +13,7 @@ A comprehensive vulnerability analysis tool for Rust code using KLEE symbolic ex
 ## Project Structure
 
 ```
-PROJECT ZOBRE/
+fuzzing+klee/
 ├── onefile.py              # Single file analyzer
 ├── allrust.py              # Folder analyzer
 ├── evaluate_datasets.py    # Dataset evaluation script
@@ -32,7 +32,7 @@ PROJECT ZOBRE/
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
-   cd PROJECT-ZOBRE
+   cd fuzzing+klee
    ```
 
 2. **Install dependencies**:
@@ -62,6 +62,30 @@ python3 allrust.py ./rust_code/
 ```bash
 python3 evaluate_datasets.py
 ```
+
+## Evaluation Dataset
+
+The project includes comprehensive evaluation datasets for testing and validation:
+
+### Positive Dataset (82 files)
+- **Source**: Real-world vulnerable Rust files from CVE database
+- **Purpose**: Test vulnerability detection capabilities
+- **Content**: Authentic security vulnerabilities including buffer overflows, use-after-free, memory leaks, and other common Rust security issues
+- **Format**: Rust source files (.rs) with corresponding vulnerability analysis files (.txt)
+
+### Negative Dataset (82 files)
+- **Source**: Clean Rust files with no known vulnerabilities
+- **Purpose**: Test false positive rates and precision
+- **Content**: Well-written, secure Rust code examples
+- **Format**: Rust source files (.rs) with corresponding analysis files (.txt)
+
+### Dataset Evaluation Results
+- **Total Files**: 164 Rust files (82 vulnerable + 82 clean)
+- **Detection Rate**: 67.1% (55/82 vulnerable files detected)
+- **Precision**: 100% (no false positives)
+- **Specificity**: 100% (all clean files correctly identified)
+- **Accuracy**: 83.5% overall performance
+- **F1 Score**: 80.4% balanced performance
 
 ## Results
 

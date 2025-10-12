@@ -46,8 +46,19 @@ This research presents a novel hybrid approach for vulnerability detection in Ru
 
 ### Dataset
 - **Positive Dataset**: 82 real-world vulnerable Rust files from CVE database
+  - **Source**: Authentic security vulnerabilities from CVE database
+  - **Content**: Buffer overflows, use-after-free, memory leaks, integer overflows, race conditions
+  - **Format**: Rust source files (.rs) with detailed vulnerability analysis (.txt)
+  - **Purpose**: Test vulnerability detection capabilities and recall rates
+
 - **Negative Dataset**: 82 clean Rust files with no known vulnerabilities
+  - **Source**: Well-written, secure Rust code examples
+  - **Content**: Best practices, safe Rust patterns, proper error handling
+  - **Format**: Rust source files (.rs) with corresponding analysis files (.txt)
+  - **Purpose**: Test false positive rates and precision
+
 - **Total Files**: 164 Rust files for comprehensive evaluation
+- **Evaluation Coverage**: Complete vulnerability spectrum from critical to low-severity issues
 
 ### Performance Metrics
 - **Detection Rate**: 67.1% (55/82 vulnerable files detected)
