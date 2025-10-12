@@ -10,7 +10,7 @@ from pathlib import Path
 
 def check_requirements():
     """Check if required tools are installed"""
-    print("🔍 Checking requirements...")
+    print("Checking requirements...")
     
     requirements = {
         'python3': 'Python 3.6+',
@@ -25,72 +25,72 @@ def check_requirements():
         try:
             result = subprocess.run([tool, '--version'], capture_output=True, text=True)
             if result.returncode == 0:
-                print(f"✅ {description}: Found")
+                print(f"SUCCESS: {description}: Found")
             else:
                 missing.append(f"{description} ({tool})")
         except FileNotFoundError:
             missing.append(f"{description} ({tool})")
     
     if missing:
-        print(f"\n❌ Missing requirements:")
+        print(f"\nERROR: Missing requirements:")
         for req in missing:
             print(f"   - {req}")
         print(f"\nPlease install the missing requirements and run setup again.")
         return False
     
-    print("✅ All requirements satisfied!")
+    print("SUCCESS: All requirements satisfied!")
     return True
 
 def install_python_dependencies():
     """Install Python dependencies"""
-    print("\n📦 Installing Python dependencies...")
+    print("\nInstalling Python dependencies...")
     
     try:
         subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'], check=True)
-        print("✅ Python dependencies installed successfully!")
+        print("SUCCESS: Python dependencies installed successfully!")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to install Python dependencies: {e}")
+        print(f"ERROR: Failed to install Python dependencies: {e}")
         return False
 
 def setup_environment():
     """Setup environment variables"""
-    print("\n🔧 Setting up environment...")
+    print("\nSetting up environment...")
     
     if not os.path.exists('.env'):
         if os.path.exists('env.template'):
             import shutil
             shutil.copy('env.template', '.env')
-            print("✅ Created .env file from template")
-            print("📝 Please edit .env file with your API keys")
+            print("SUCCESS: Created .env file from template")
+            print("Please edit .env file with your API keys")
         else:
-            print("⚠️  env.template not found, skipping environment setup")
+            print("WARNING: env.template not found, skipping environment setup")
     else:
-        print("✅ .env file already exists")
+        print("SUCCESS: .env file already exists")
 
 def create_directories():
     """Create necessary directories"""
-    print("\n📁 Creating directories...")
+    print("\nCreating directories...")
     
     directories = ['results', 'reports', 'temp']
     
     for directory in directories:
         Path(directory).mkdir(exist_ok=True)
-        print(f"✅ Created directory: {directory}")
+        print(f"SUCCESS: Created directory: {directory}")
 
 def main():
     """Main setup function"""
-    print("🚀 Cracking Unsafe Rust - Project Setup")
+    print("Cracking Unsafe Rust - Project Setup")
     print("=" * 50)
     
     # Check requirements
     if not check_requirements():
-        print("\n❌ Setup failed due to missing requirements")
+        print("\nERROR: Setup failed due to missing requirements")
         sys.exit(1)
     
     # Install Python dependencies
     if not install_python_dependencies():
-        print("\n❌ Setup failed during dependency installation")
+        print("\nERROR: Setup failed during dependency installation")
         sys.exit(1)
     
     # Setup environment
@@ -99,8 +99,8 @@ def main():
     # Create directories
     create_directories()
     
-    print("\n🎉 Setup completed successfully!")
-    print("\n📋 Next steps:")
+    print("\nSUCCESS: Setup completed successfully!")
+    print("\nNext steps:")
     print("1. Edit .env file with your API keys")
     print("2. Test with: python3 onefile.py example.rs")
     print("3. Evaluate datasets: python3 evaluate_datasets.py")

@@ -24,7 +24,7 @@ class SingleFileAnalyzer:
     def setup_temp_environment(self):
         """Setup temporary directory for analysis"""
         self.temp_dir = tempfile.mkdtemp(prefix="rust_analysis_")
-        print(f"📁 Created temporary directory: {self.temp_dir}")
+        print(f"Created temporary directory: {self.temp_dir}")
         return self.temp_dir
     
     def copy_file_to_temp(self, file_path):
@@ -32,7 +32,7 @@ class SingleFileAnalyzer:
         file_name = Path(file_path).name
         temp_file_path = os.path.join(self.temp_dir, file_name)
         shutil.copy2(file_path, temp_file_path)
-        print(f"📄 Copied {file_name} to temporary directory")
+        print(f"Copied {file_name} to temporary directory")
         return temp_file_path
     
     def generate_ffi_wrapper(self, rust_code, api_key="your_openai_api_key_here"):
@@ -61,7 +61,7 @@ class SingleFileAnalyzer:
             return response.choices[0].message.content.strip()
             
         except Exception as e:
-            print(f"⚠️  LLM generation failed: {e}")
+            print(f"WARNING: LLM generation failed: {e}")
             return self._generate_basic_ffi_wrapper(rust_code)
     
     def _generate_basic_ffi_wrapper(self, rust_code):
@@ -158,20 +158,20 @@ fuzz_target!(|data: &[u8]| {{
             
             result = subprocess.run(compile_cmd, capture_output=True, text=True, cwd=self.temp_dir)
             if result.returncode == 0:
-                print(f"✅ Compiled to bitcode: {bc_file}")
+                print(f"SUCCESS: Compiled to bitcode: {bc_file}")
                 return bc_file
             else:
-                print(f"❌ Compilation failed: {result.stderr}")
+                print(f"ERROR: Compilation failed: {result.stderr}")
                 return None
                 
         except Exception as e:
-            print(f"❌ Compilation error: {e}")
+            print(f"ERROR: Compilation error: {e}")
             return None
     
     def run_klee_analysis(self, bc_file):
         """Run KLEE analysis"""
         try:
-            print("🔍 Running KLEE analysis...")
+            print("Running KLEE analysis...")
             klee_cmd = [
                 'klee', 
                 '--max-time=60',
@@ -206,20 +206,20 @@ fuzz_target!(|data: &[u8]| {{
                         except:
                             pass
             
-            print(f"✅ KLEE analysis completed: {klee_results['test_cases']} test cases, {klee_results['errors']} errors")
+            print(f"SUCCESS: KLEE analysis completed: {klee_results['test_cases']} test cases, {klee_results['errors']} errors")
             return klee_results
             
         except subprocess.TimeoutExpired:
-            print("⏰ KLEE analysis timed out")
+            print("TIMEOUT: KLEE analysis timed out")
             return {'returncode': -1, 'stdout': '', 'stderr': 'Timeout', 'test_cases': 0, 'errors': 0}
         except Exception as e:
-            print(f"❌ KLEE analysis error: {e}")
+            print(f"ERROR: KLEE analysis error: {e}")
             return {'returncode': -1, 'stdout': '', 'stderr': str(e), 'test_cases': 0, 'errors': 0}
     
     def run_fuzzing_analysis(self, rust_file_path):
         """Run fuzzing analysis"""
         try:
-            print("🔍 Running fuzzing analysis...")
+            print("Running fuzzing analysis...")
             
             # Create fuzz target
             fuzz_target = rust_file_path.replace('.rs', '_fuzz.rs')
@@ -260,25 +260,25 @@ fuzz_target!(|data: &[u8]| {{
                             except:
                                 pass
                 
-                print(f"✅ Fuzzing completed: {fuzz_results['executions']} executions, {fuzz_results['crashes']} crashes")
+                print(f"SUCCESS: Fuzzing completed: {fuzz_results['executions']} executions, {fuzz_results['crashes']} crashes")
                 return fuzz_results
             else:
-                print(f"❌ Fuzzer compilation failed: {result.stderr}")
+                print(f"ERROR: Fuzzer compilation failed: {result.stderr}")
                 return {'returncode': -1, 'stdout': '', 'stderr': 'Compilation failed', 'crashes': 0, 'executions': 0}
                 
         except subprocess.TimeoutExpired:
-            print("⏰ Fuzzing analysis timed out")
+            print("TIMEOUT: Fuzzing analysis timed out")
             return {'returncode': -1, 'stdout': '', 'stderr': 'Timeout', 'crashes': 0, 'executions': 0}
         except Exception as e:
-            print(f"❌ Fuzzing analysis error: {e}")
+            print(f"ERROR: Fuzzing analysis error: {e}")
             return {'returncode': -1, 'stdout': '', 'stderr': str(e), 'crashes': 0, 'executions': 0}
     
     def analyze_file(self, file_path):
         """Analyze a single Rust file"""
-        print(f"🔍 Analyzing file: {file_path}")
+        print(f"Analyzing file: {file_path}")
         
         if not os.path.exists(file_path):
-            print(f"❌ File not found: {file_path}")
+            print(f"ERROR: File not found: {file_path}")
             return None
         
         # Setup
@@ -342,9 +342,9 @@ def main():
     
     file_path = sys.argv[1]
     
-    print("🚀 Single File Vulnerability Analyzer")
+    print("Single File Vulnerability Analyzer")
     print("=" * 50)
-    print(f"📄 Analyzing: {file_path}")
+    print(f"Analyzing: {file_path}")
     print()
     
     analyzer = SingleFileAnalyzer()
@@ -353,30 +353,30 @@ def main():
         results = analyzer.analyze_file(file_path)
         
         if results:
-            print("\n📊 ANALYSIS RESULTS")
+            print("\nANALYSIS RESULTS")
             print("=" * 30)
-            print(f"📄 File: {results['file_path']}")
-            print(f"⏰ Analysis Time: {results['analysis_time']}")
-            print(f"🔍 KLEE Test Cases: {results['klee_results'].get('test_cases', 0)}")
-            print(f"❌ KLEE Errors: {results['klee_results'].get('errors', 0)}")
-            print(f"🔍 Fuzz Executions: {results['fuzz_results'].get('executions', 0)}")
-            print(f"💥 Fuzz Crashes: {results['fuzz_results'].get('crashes', 0)}")
-            print(f"🎯 Vulnerabilities Detected: {'Yes' if results['vulnerabilities_detected'] else 'No'}")
-            print(f"📊 Total Vulnerabilities: {results['total_vulnerabilities']}")
+            print(f"File: {results['file_path']}")
+            print(f"Analysis Time: {results['analysis_time']}")
+            print(f"KLEE Test Cases: {results['klee_results'].get('test_cases', 0)}")
+            print(f"KLEE Errors: {results['klee_results'].get('errors', 0)}")
+            print(f"Fuzz Executions: {results['fuzz_results'].get('executions', 0)}")
+            print(f"Fuzz Crashes: {results['fuzz_results'].get('crashes', 0)}")
+            print(f"Vulnerabilities Detected: {'Yes' if results['vulnerabilities_detected'] else 'No'}")
+            print(f"Total Vulnerabilities: {results['total_vulnerabilities']}")
             
             # Save results
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             results_file = f"analysis_results_{timestamp}.json"
             with open(results_file, 'w') as f:
                 json.dump(results, f, indent=2)
-            print(f"\n📄 Results saved to: {results_file}")
+            print(f"\nResults saved to: {results_file}")
         else:
-            print("❌ Analysis failed")
+            print("ERROR: Analysis failed")
             
     except KeyboardInterrupt:
-        print("\n⏹️  Analysis interrupted by user")
+        print("\nAnalysis interrupted by user")
     except Exception as e:
-        print(f"❌ Analysis error: {e}")
+        print(f"ERROR: Analysis error: {e}")
     finally:
         analyzer.cleanup()
 

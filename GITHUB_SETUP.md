@@ -31,23 +31,23 @@ git push -u origin main
 
 ```
 Cracking-Unsafe-Rust-A-Hybrid-Symbolic-Execution-and-Fuzzing-Approach-with-LLM/
-├── 📄 README.md                    # Project overview and documentation
-├── 📄 THESIS_DOCUMENTATION.md      # Academic documentation
-├── 📄 CONTRIBUTORS.md              # Contributors and acknowledgments
-├── 📄 CONTRIBUTING.md              # Contribution guidelines
-├── 📄 GITHUB_SETUP.md             # This file
-├── 📄 LICENSE                     # MIT License
-├── 🚀 onefile.py                  # Single file analyzer
-├── 📁 allrust.py                  # Folder analyzer
-├── 📊 evaluate_datasets.py       # Dataset evaluation
-├── ⚙️  setup.py                   # Project setup
-├── 🧪 test_setup.py              # Setup testing
-├── 📋 requirements.txt           # Python dependencies
-├── 🔧 config.yaml                # Configuration
-├── 🔑 env.template               # Environment template
-├── 📁 Positive/                  # 82 vulnerable Rust files
-├── 📁 Negative/                  # 82 clean Rust files
-└── 🔒 .gitignore                 # Git ignore rules
+├── README.md                    # Project overview and documentation
+├── THESIS_DOCUMENTATION.md      # Academic documentation
+├── CONTRIBUTORS.md              # Contributors and acknowledgments
+├── CONTRIBUTING.md              # Contribution guidelines
+├── GITHUB_SETUP.md             # This file
+├── LICENSE                     # MIT License
+├── onefile.py                  # Single file analyzer
+├── allrust.py                  # Folder analyzer
+├── evaluate_datasets.py       # Dataset evaluation
+├── setup.py                   # Project setup
+├── test_setup.py              # Setup testing
+├── requirements.txt           # Python dependencies
+├── config.yaml                # Configuration
+├── env.template               # Environment template
+├── Positive/                  # 82 vulnerable Rust files
+├── Negative/                  # 82 clean Rust files
+└── .gitignore                 # Git ignore rules
 ```
 
 ## GitHub Repository Settings

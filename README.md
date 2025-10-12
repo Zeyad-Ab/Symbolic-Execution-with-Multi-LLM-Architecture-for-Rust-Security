@@ -2,7 +2,7 @@
 
 A comprehensive vulnerability analysis tool for Rust code using KLEE symbolic execution and LibFuzzer dynamic analysis.
 
-## 🚀 Features
+## Features
 
 - **Single File Analysis**: Analyze individual Rust files for vulnerabilities
 - **Batch Analysis**: Process entire folders of Rust code
@@ -10,7 +10,7 @@ A comprehensive vulnerability analysis tool for Rust code using KLEE symbolic ex
 - **Dataset Evaluation**: Test on Positive and Negative vulnerability datasets
 - **Comprehensive Reporting**: Detailed vulnerability reports with metrics
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 PROJECT ZOBRE/
@@ -27,7 +27,7 @@ PROJECT ZOBRE/
 └── README.md              # This file
 ```
 
-## 🛠️ Installation
+## Installation
 
 1. **Clone the repository**:
    ```bash
@@ -46,7 +46,7 @@ PROJECT ZOBRE/
    # Edit .env with your API keys
    ```
 
-## 🚀 Usage
+## Usage
 
 ### Single File Analysis
 ```bash
@@ -63,7 +63,7 @@ python3 allrust.py ./rust_code/
 python3 evaluate_datasets.py
 ```
 
-## 📊 Results
+## Results
 
 The tools generate comprehensive reports including:
 - **Vulnerability Detection**: KLEE errors and fuzzing crashes
@@ -71,7 +71,7 @@ The tools generate comprehensive reports including:
 - **Confusion Matrix**: TP, TN, FP, FN metrics
 - **Quality Assessment**: Accuracy, precision, recall, specificity
 
-## 🔧 Requirements
+## Requirements
 
 - **Rust Compiler** (`rustc`)
 - **KLEE** symbolic execution engine
@@ -79,7 +79,7 @@ The tools generate comprehensive reports including:
 - **Python 3.6+**
 - **OpenAI API Key** (for LLM-based code generation)
 
-## 📈 Performance
+## Performance
 
 - **Analysis Speed**: 200-300 files/second
 - **Detection Rate**: 67.1% on vulnerability datasets
@@ -87,25 +87,25 @@ The tools generate comprehensive reports including:
 - **Precision**: 100% (no false positives)
 - **Recall**: 67.1% (good vulnerability detection)
 
-## 🎯 Use Cases
+## Use Cases
 
 - **Security Auditing**: Identify vulnerabilities in Rust codebases
 - **Research**: Academic research on vulnerability detection
 - **CI/CD Integration**: Automated security testing in pipelines
 - **Code Review**: Assist developers in finding security issues
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👥 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
 
-## 📞 Support
+## Support
 
 For questions or issues, please open an issue on GitHub.
 

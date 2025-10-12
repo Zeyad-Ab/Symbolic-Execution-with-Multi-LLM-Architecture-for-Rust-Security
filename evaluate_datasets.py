@@ -13,14 +13,14 @@ from enhanced_comprehensive_analyzer import EnhancedComprehensiveAnalyzer, Compr
 
 def evaluate_datasets():
     """Evaluate Positive and Negative datasets"""
-    print("🔬 DATASET EVALUATION")
+    print("DATASET EVALUATION")
     print("=" * 50)
-    print("📊 Evaluating Positive and Negative datasets")
+    print("Evaluating Positive and Negative datasets")
     print()
     
     # Check if datasets exist
     if not os.path.exists("Positive") or not os.path.exists("Negative"):
-        print("❌ Positive or Negative dataset folders not found!")
+        print("ERROR: Positive or Negative dataset folders not found!")
         print("Please ensure you have 'Positive' and 'Negative' folders with .rs files")
         return None
     
@@ -33,7 +33,7 @@ def evaluate_datasets():
     analyzer = EnhancedComprehensiveAnalyzer(config)
     
     # Run analysis
-    print("🔍 Running analysis on both datasets...")
+    print("Running analysis on both datasets...")
     start_time = time.time()
     
     results = analyzer.run_enhanced_analysis("Positive", "Negative")
@@ -59,56 +59,56 @@ def evaluate_datasets():
     f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
     
     # Display results
-    print(f"\n📊 CONFUSION MATRIX")
+    print(f"\nCONFUSION MATRIX")
     print(f"=" * 30)
-    print(f"✅ True Positives (TP):  {tp:3d} - Vulnerable files correctly identified")
-    print(f"✅ True Negatives (TN):  {tn:3d} - Clean files correctly identified")
-    print(f"❌ False Positives (FP): {fp:3d} - Clean files incorrectly flagged")
-    print(f"❌ False Negatives (FN): {fn:3d} - Vulnerable files missed")
-    print(f"📊 Total Files:          {total:3d}")
+    print(f"SUCCESS: True Positives (TP):  {tp:3d} - Vulnerable files correctly identified")
+    print(f"SUCCESS: True Negatives (TN):  {tn:3d} - Clean files correctly identified")
+    print(f"ERROR: False Positives (FP): {fp:3d} - Clean files incorrectly flagged")
+    print(f"ERROR: False Negatives (FN): {fn:3d} - Vulnerable files missed")
+    print(f"Total Files:          {total:3d}")
     
-    print(f"\n📈 PERFORMANCE METRICS")
+    print(f"\nPERFORMANCE METRICS")
     print(f"=" * 30)
-    print(f"🎯 Accuracy:     {accuracy:.3f} ({accuracy*100:.1f}%)")
-    print(f"🎯 Precision:    {precision:.3f} ({precision*100:.1f}%)")
-    print(f"🎯 Recall:       {recall:.3f} ({recall*100:.1f}%)")
-    print(f"🎯 Specificity:  {specificity:.3f} ({specificity*100:.1f}%)")
-    print(f"🎯 F1 Score:     {f1_score:.3f}")
+    print(f"Accuracy:     {accuracy:.3f} ({accuracy*100:.1f}%)")
+    print(f"Precision:    {precision:.3f} ({precision*100:.1f}%)")
+    print(f"Recall:       {recall:.3f} ({recall*100:.1f}%)")
+    print(f"Specificity:  {specificity:.3f} ({specificity*100:.1f}%)")
+    print(f"F1 Score:     {f1_score:.3f}")
     
-    print(f"\n⚡ PERFORMANCE")
+    print(f"\nPERFORMANCE")
     print(f"=" * 30)
-    print(f"⏱️  Analysis Time: {analysis_time:.2f} seconds")
-    print(f"🚀 Throughput: {total / analysis_time:.1f} files/second")
+    print(f"Analysis Time: {analysis_time:.2f} seconds")
+    print(f"Throughput: {total / analysis_time:.1f} files/second")
     
     # Quality assessment
-    print(f"\n🔍 QUALITY ASSESSMENT")
+    print(f"\nQUALITY ASSESSMENT")
     print(f"=" * 30)
     if accuracy >= 0.8:
-        print(f"✅ Excellent accuracy: {accuracy*100:.1f}%")
+        print(f"SUCCESS: Excellent accuracy: {accuracy*100:.1f}%")
     elif accuracy >= 0.7:
-        print(f"✅ Good accuracy: {accuracy*100:.1f}%")
+        print(f"SUCCESS: Good accuracy: {accuracy*100:.1f}%")
     elif accuracy >= 0.6:
-        print(f"📈 Fair accuracy: {accuracy*100:.1f}%")
+        print(f"FAIR: Fair accuracy: {accuracy*100:.1f}%")
     else:
-        print(f"⚠️  Poor accuracy: {accuracy*100:.1f}%")
+        print(f"WARNING: Poor accuracy: {accuracy*100:.1f}%")
     
     if precision >= 0.8:
-        print(f"✅ Excellent precision: {precision*100:.1f}%")
+        print(f"SUCCESS: Excellent precision: {precision*100:.1f}%")
     elif precision >= 0.7:
-        print(f"✅ Good precision: {precision*100:.1f}%")
+        print(f"SUCCESS: Good precision: {precision*100:.1f}%")
     elif precision >= 0.6:
-        print(f"📈 Fair precision: {precision*100:.1f}%")
+        print(f"FAIR: Fair precision: {precision*100:.1f}%")
     else:
-        print(f"⚠️  Poor precision: {precision*100:.1f}%")
+        print(f"WARNING: Poor precision: {precision*100:.1f}%")
     
     if recall >= 0.8:
-        print(f"✅ Excellent recall: {recall*100:.1f}%")
+        print(f"SUCCESS: Excellent recall: {recall*100:.1f}%")
     elif recall >= 0.7:
-        print(f"✅ Good recall: {recall*100:.1f}%")
+        print(f"SUCCESS: Good recall: {recall*100:.1f}%")
     elif recall >= 0.6:
-        print(f"📈 Fair recall: {recall*100:.1f}%")
+        print(f"FAIR: Fair recall: {recall*100:.1f}%")
     else:
-        print(f"⚠️  Poor recall: {recall*100:.1f}%")
+        print(f"WARNING: Poor recall: {recall*100:.1f}%")
     
     # Save results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -149,7 +149,7 @@ def evaluate_datasets():
     with open(report_file, 'w') as f:
         json.dump(evaluation_data, f, indent=2)
     
-    print(f"\n📄 Evaluation report saved to: {report_file}")
+    print(f"\nEvaluation report saved to: {report_file}")
     
     return evaluation_data
 

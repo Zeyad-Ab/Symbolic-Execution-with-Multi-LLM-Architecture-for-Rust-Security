@@ -30,18 +30,18 @@ class AllRustAnalyzer:
         folder = Path(folder_path)
         
         if not folder.exists():
-            print(f"❌ Folder not found: {folder_path}")
+            print(f"ERROR: Folder not found: {folder_path}")
             return rust_files
         
         for file_path in folder.rglob("*.rs"):
             rust_files.append(str(file_path))
         
-        print(f"📁 Found {len(rust_files)} Rust files in {folder_path}")
+        print(f"Found {len(rust_files)} Rust files in {folder_path}")
         return rust_files
     
     def analyze_single_file(self, file_path):
         """Analyze a single Rust file (similar to onefile.py but simplified)"""
-        print(f"🔍 Analyzing: {Path(file_path).name}")
+        print(f"Analyzing: {Path(file_path).name}")
         
         try:
             # Create temporary directory for this file
@@ -92,7 +92,7 @@ class AllRustAnalyzer:
             return results
             
         except Exception as e:
-            print(f"❌ Error analyzing {Path(file_path).name}: {e}")
+            print(f"ERROR: Error analyzing {Path(file_path).name}: {e}")
             return {
                 'file_path': file_path,
                 'file_name': Path(file_path).name,
@@ -276,16 +276,16 @@ fuzz_target!(|data: &[u8]| {{
     
     def analyze_folder(self, folder_path):
         """Analyze all Rust files in a folder"""
-        print(f"🔍 Analyzing folder: {folder_path}")
+        print(f"Analyzing folder: {folder_path}")
         
         # Find all Rust files
         rust_files = self.find_rust_files(folder_path)
         
         if not rust_files:
-            print("❌ No Rust files found in the folder")
+            print("ERROR: No Rust files found in the folder")
             return {}
         
-        print(f"🚀 Starting analysis of {len(rust_files)} files with {self.max_workers} workers...")
+        print(f"Starting analysis of {len(rust_files)} files with {self.max_workers} workers...")
         
         # Analyze files in parallel
         start_time = time.time()
@@ -305,12 +305,12 @@ fuzz_target!(|data: &[u8]| {{
                     
                     if result.get('success', False):
                         vuln_count = result.get('total_vulnerabilities', 0)
-                        print(f"✅ {Path(file_path).name}: {vuln_count} vulnerabilities")
+                        print(f"SUCCESS: {Path(file_path).name}: {vuln_count} vulnerabilities")
                     else:
-                        print(f"❌ {Path(file_path).name}: Analysis failed")
+                        print(f"ERROR: {Path(file_path).name}: Analysis failed")
                         
                 except Exception as e:
-                    print(f"❌ {Path(file_path).name}: Exception - {e}")
+                    print(f"ERROR: {Path(file_path).name}: Exception - {e}")
                     results[file_path] = {
                         'file_path': file_path,
                         'file_name': Path(file_path).name,
@@ -368,9 +368,9 @@ def main():
     
     folder_path = sys.argv[1]
     
-    print("🚀 All Rust Files Vulnerability Analyzer")
+    print("All Rust Files Vulnerability Analyzer")
     print("=" * 50)
-    print(f"📁 Analyzing folder: {folder_path}")
+    print(f"Analyzing folder: {folder_path}")
     print()
     
     analyzer = AllRustAnalyzer(max_workers=4)
@@ -381,34 +381,34 @@ def main():
         if results:
             summary = results['summary']
             
-            print("\n📊 ANALYSIS SUMMARY")
+            print("\nANALYSIS SUMMARY")
             print("=" * 30)
-            print(f"📁 Folder: {results['folder_path']}")
-            print(f"📄 Total Files: {summary['total_files']}")
-            print(f"✅ Successful: {summary['successful_analyses']}")
-            print(f"❌ Failed: {summary['failed_analyses']}")
-            print(f"🎯 Vulnerable Files: {summary['vulnerable_files']}")
-            print(f"✅ Clean Files: {summary['clean_files']}")
-            print(f"📊 Detection Rate: {summary['detection_rate']:.1f}%")
-            print(f"🔍 Total Vulnerabilities: {summary['total_vulnerabilities']}")
+            print(f"Folder: {results['folder_path']}")
+            print(f"Total Files: {summary['total_files']}")
+            print(f"Successful: {summary['successful_analyses']}")
+            print(f"Failed: {summary['failed_analyses']}")
+            print(f"Vulnerable Files: {summary['vulnerable_files']}")
+            print(f"Clean Files: {summary['clean_files']}")
+            print(f"Detection Rate: {summary['detection_rate']:.1f}%")
+            print(f"Total Vulnerabilities: {summary['total_vulnerabilities']}")
             print(f"   - KLEE Errors: {summary['total_klee_errors']}")
             print(f"   - Fuzz Crashes: {summary['total_fuzz_crashes']}")
-            print(f"⏰ Analysis Time: {summary['analysis_time']:.2f} seconds")
-            print(f"🚀 Throughput: {summary['throughput']:.1f} files/second")
+            print(f"Analysis Time: {summary['analysis_time']:.2f} seconds")
+            print(f"Throughput: {summary['throughput']:.1f} files/second")
             
             # Save results
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             results_file = f"folder_analysis_results_{timestamp}.json"
             with open(results_file, 'w') as f:
                 json.dump(results, f, indent=2)
-            print(f"\n📄 Results saved to: {results_file}")
+            print(f"\nResults saved to: {results_file}")
         else:
-            print("❌ Analysis failed")
+            print("ERROR: Analysis failed")
             
     except KeyboardInterrupt:
-        print("\n⏹️  Analysis interrupted by user")
+        print("\nAnalysis interrupted by user")
     except Exception as e:
-        print(f"❌ Analysis error: {e}")
+        print(f"ERROR: Analysis error: {e}")
 
 if __name__ == "__main__":
     main()
