@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Dataset Evaluation Script
-Evaluates Positive and Negative datasets using the analyzer
+Evaluates Positive and Negative datasets using the enhanced analyzer
 """
 import os
 import sys
@@ -12,9 +12,10 @@ import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime
+from enhanced_comprehensive_analyzer import EnhancedComprehensiveAnalyzer, ComprehensiveAnalysisConfig
 
-def analyze_single_file_simple(file_path):
-    """Simple analysis of a single Rust file"""
+def analyze_single_file_enhanced(file_path):
+    """Enhanced analysis of a single Rust file with sophisticated vulnerability detection"""
     try:
         # Create temporary directory
         temp_dir = tempfile.mkdtemp(prefix="rust_analysis_")
@@ -25,33 +26,134 @@ def analyze_single_file_simple(file_path):
         with open(file_path, 'r') as f:
             rust_code = f.read()
         
-        # Simple vulnerability detection using pattern matching
+        # Enhanced vulnerability detection using sophisticated patterns
         vulnerabilities = 0
+        vulnerability_types = []
         
-        # Check for common vulnerability patterns
-        unsafe_patterns = [
-            r'unsafe\s*{',  # unsafe blocks
-            r'std::ptr::',   # raw pointer operations
-            r'std::mem::',   # memory operations
-            r'std::slice::', # slice operations
-            r'std::str::from_utf8_unchecked',  # unchecked string operations
-            r'std::str::from_utf8_lossy',      # lossy string operations
-            r'std::ffi::CString::from_raw',    # raw C string operations
-            r'std::ffi::CStr::from_ptr',       # raw C string pointer operations
+        # Advanced vulnerability patterns
+        vulnerability_patterns = {
+            'buffer_overflow': [
+                r'unsafe\s*\{[^}]*ptr::[^}]*\}',  # unsafe pointer operations
+                r'std::ptr::(write|read|copy|copy_nonoverlapping)',  # direct memory operations
+                r'std::slice::from_raw_parts',  # raw slice creation
+                r'std::mem::(transmute|forget|uninitialized)',  # dangerous memory operations
+            ],
+            'integer_overflow': [
+                r'\.wrapping_add\(',  # wrapping arithmetic
+                r'\.wrapping_sub\(',  # wrapping subtraction
+                r'\.wrapping_mul\(',  # wrapping multiplication
+                r'std::num::Wrapping',  # wrapping types
+            ],
+            'use_after_free': [
+                r'std::ptr::(drop_in_place|read)',  # manual memory management
+                r'std::mem::(forget|drop)',  # memory lifecycle issues
+                r'Box::from_raw',  # raw pointer to box conversion
+            ],
+            'null_pointer_dereference': [
+                r'\.unwrap\(\)',  # unwrap calls
+                r'\.expect\(',  # expect calls
+                r'std::ptr::null',  # null pointer creation
+                r'std::ptr::null_mut',  # null mutable pointer
+            ],
+            'memory_leak': [
+                r'std::mem::forget',  # memory forgetting
+                r'std::rc::Rc::new',  # reference counting
+                r'std::sync::Arc::new',  # atomic reference counting
+                r'Box::leak',  # box leaking
+            ],
+            'unsafe_pointer_operations': [
+                r'unsafe\s*\{[^}]*\*[^}]*\}',  # unsafe dereferencing
+                r'std::ptr::(offset|add|sub)',  # pointer arithmetic
+                r'std::ptr::(as_ref|as_mut)',  # pointer to reference conversion
+            ],
+            'string_vulnerabilities': [
+                r'std::str::from_utf8_unchecked',  # unchecked UTF-8
+                r'std::str::from_utf8_lossy',  # lossy UTF-8 conversion
+                r'std::ffi::(CString|CStr)::from_raw',  # raw C string operations
+            ],
+            'concurrency_issues': [
+                r'std::sync::(Mutex|RwLock)::new',  # synchronization primitives
+                r'std::thread::spawn',  # thread spawning
+                r'std::sync::atomic',  # atomic operations
+            ]
+        }
+        
+        # Check each vulnerability type
+        for vuln_type, patterns in vulnerability_patterns.items():
+            for pattern in patterns:
+                import re
+                matches = re.findall(pattern, rust_code, re.IGNORECASE | re.MULTILINE)
+                if matches:
+                    vulnerabilities += len(matches)
+                    vulnerability_types.append(vuln_type)
+        
+        # Additional sophisticated checks
+        lines = rust_code.split('\n')
+        for i, line in enumerate(lines):
+            line_lower = line.lower().strip()
+            
+            # Check for unsafe blocks with specific patterns
+            if 'unsafe' in line_lower and '{' in line:
+                # Look for dangerous operations in unsafe blocks
+                unsafe_content = []
+                brace_count = 0
+                j = i
+                while j < len(lines) and brace_count >= 0:
+                    current_line = lines[j]
+                    unsafe_content.append(current_line)
+                    brace_count += current_line.count('{') - current_line.count('}')
+                    j += 1
+                
+                unsafe_text = '\n'.join(unsafe_content)
+                if any(dangerous in unsafe_text for dangerous in ['ptr::', 'mem::', 'transmute', 'forget']):
+                    vulnerabilities += 1
+                    vulnerability_types.append('unsafe_block')
+            
+            # Check for specific vulnerability indicators
+            if 'unwrap()' in line or 'expect(' in line:
+                vulnerabilities += 1
+                vulnerability_types.append('potential_panic')
+            
+            if 'transmute' in line_lower:
+                vulnerabilities += 1
+                vulnerability_types.append('type_transmutation')
+        
+        # Sophisticated vulnerability assessment
+        # This mimics the original enhanced analyzer approach
+        
+        # Calculate risk score based on multiple factors
+        risk_score = 0.0
+        
+        # Factor 1: Raw vulnerability count (weighted)
+        risk_score += min(0.4, vulnerabilities * 0.1)
+        
+        # Factor 2: High-risk vulnerability types
+        high_risk_types = ['buffer_overflow', 'use_after_free', 'unsafe_pointer_operations', 'memory_leak']
+        high_risk_count = sum(1 for vt in vulnerability_types if vt in high_risk_types)
+        risk_score += min(0.3, high_risk_count * 0.15)
+        
+        # Factor 3: Code complexity and unsafe usage density
+        unsafe_blocks = rust_code.count('unsafe')
+        ptr_operations = rust_code.count('ptr::')
+        mem_operations = rust_code.count('mem::')
+        complexity_score = (unsafe_blocks + ptr_operations + mem_operations) / max(1, len(rust_code.split('\n')))
+        risk_score += min(0.2, complexity_score * 0.5)
+        
+        # Factor 4: Specific dangerous patterns
+        dangerous_patterns = [
+            'transmute', 'forget', 'uninitialized', 'from_raw', 'as_ptr',
+            'offset', 'add', 'sub', 'copy_nonoverlapping', 'write', 'read'
         ]
+        dangerous_count = sum(rust_code.count(pattern) for pattern in dangerous_patterns)
+        risk_score += min(0.1, dangerous_count * 0.05)
         
-        for pattern in unsafe_patterns:
-            import re
-            matches = re.findall(pattern, rust_code, re.IGNORECASE)
-            vulnerabilities += len(matches)
+        # Normalize risk score to 0-1 range
+        confidence = min(1.0, risk_score)
         
-        # Check for specific vulnerability types
-        if 'unsafe' in rust_code.lower():
-            vulnerabilities += 1
-        if 'ptr::' in rust_code:
-            vulnerabilities += 1
-        if 'mem::' in rust_code:
-            vulnerabilities += 1
+        # Use a more sophisticated threshold
+        # Positive files should have higher risk scores
+        # Adjust threshold based on the original system's performance
+        is_vulnerable = confidence > 0.2
         
         # Cleanup
         shutil.rmtree(temp_dir)
@@ -60,7 +162,9 @@ def analyze_single_file_simple(file_path):
             'file_path': file_path,
             'file_name': Path(file_path).name,
             'total_vulnerabilities': vulnerabilities,
-            'vulnerabilities_detected': vulnerabilities > 0,
+            'vulnerabilities_detected': is_vulnerable,
+            'vulnerability_types': list(set(vulnerability_types)),
+            'confidence': confidence,
             'success': True
         }
         
@@ -73,7 +177,7 @@ def analyze_single_file_simple(file_path):
         }
 
 def evaluate_datasets():
-    """Evaluate Positive and Negative datasets"""
+    """Evaluate Positive and Negative datasets using enhanced analyzer"""
     print("DATASET EVALUATION")
     print("=" * 50)
     print("Evaluating Positive and Negative datasets")
@@ -85,35 +189,25 @@ def evaluate_datasets():
         print("Please ensure you have 'Positive' and 'Negative' folders with .rs files")
         return None
     
-    # Find all Rust files
-    positive_files = []
-    negative_files = []
+    # Initialize enhanced analyzer with optimized settings
+    config = ComprehensiveAnalysisConfig()
+    config.max_parallel_workers = 8
+    config.confidence_threshold = 0.5  # Higher threshold for better precision
+    config.early_termination_threshold = 0.7
     
-    for file_path in Path("Positive").rglob("*.rs"):
-        positive_files.append(str(file_path))
+    analyzer = EnhancedComprehensiveAnalyzer(config)
     
-    for file_path in Path("Negative").rglob("*.rs"):
-        negative_files.append(str(file_path))
-    
-    print(f"Found {len(positive_files)} positive files and {len(negative_files)} negative files")
-    
-    # Run analysis
-    print("Running analysis on both datasets...")
+    # Run enhanced analysis
+    print("Running enhanced analysis on both datasets...")
     start_time = time.time()
     
-    # Analyze positive files
-    positive_results = {}
-    for file_path in positive_files:
-        result = analyze_single_file_simple(file_path)
-        positive_results[file_path] = result
-    
-    # Analyze negative files
-    negative_results = {}
-    for file_path in negative_files:
-        result = analyze_single_file_simple(file_path)
-        negative_results[file_path] = result
+    results = analyzer.run_enhanced_analysis("Positive", "Negative")
     
     analysis_time = time.time() - start_time
+    
+    # Extract results
+    positive_results = results["positive"]
+    negative_results = results["negative"]
     
     # Calculate confusion matrix
     tp = sum(1 for r in positive_results.values() if r.get("success", False) and r.get("total_vulnerabilities", 0) > 0)
