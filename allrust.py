@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 All Rust Files Analyzer
-Analyzes all Rust files in a folder using KLEE and Fuzzing
+Uses real LLM + KLEE + Fuzzing approach for folder analysis
 Usage: python3 allrust.py <folder_path>
 """
 import os
@@ -15,12 +15,19 @@ import json
 from datetime import datetime
 import concurrent.futures
 from threading import Lock
+from openai import OpenAI
 
 class AllRustAnalyzer:
-    """Analyzer for all Rust files in a folder using KLEE and Fuzzing"""
+    """Real analyzer for all Rust files using LLM + KLEE + Fuzzing approach"""
     
-    def __init__(self, max_workers=4):
+    def __init__(self, max_workers=4, api_key=None):
         self.max_workers = max_workers
+        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        if not self.api_key:
+            print("ERROR: OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
+            sys.exit(1)
+        
+        self.client = OpenAI(api_key=self.api_key)
         self.results = {}
         self.lock = Lock()
         

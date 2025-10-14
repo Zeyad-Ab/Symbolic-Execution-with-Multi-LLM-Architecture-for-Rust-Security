@@ -1,3 +1,19 @@
-openai>=1.0.0
-paramiko>=2.7.0
-pathlib2>=2.3.0
+# Real LLM + KLEE + Fuzzing Rust Vulnerability Analysis
+# Requirements for the hybrid symbolic execution and fuzzing approach
+
+# Core LLM integration
+openai>=2.0.0
+
+# Parallel processing
+concurrent.futures
+
+# System requirements (install separately):
+# - Rust compiler (rustc)
+# - Clang compiler
+# - KLEE symbolic execution engine
+# - LLVM tools (llvm-link)
+# - LibFuzzer (part of LLVM)
+
+# Optional: For enhanced analysis
+# paramiko>=2.0.0  # For remote execution
+# pyyaml>=6.0     # For configuration files

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Single File Vulnerability Analyzer
-Analyzes a single Rust file using KLEE and Fuzzing
+Uses real LLM + KLEE + Fuzzing approach
 Usage: python3 onefile.py example.rs
 """
 import os
@@ -13,11 +13,18 @@ import shutil
 from pathlib import Path
 import json
 from datetime import datetime
+from openai import OpenAI
 
 class SingleFileAnalyzer:
-    """Analyzer for single Rust files using KLEE and Fuzzing"""
+    """Real analyzer using LLM + KLEE + Fuzzing approach"""
     
-    def __init__(self):
+    def __init__(self, api_key=None):
+        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        if not self.api_key:
+            print("ERROR: OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
+            sys.exit(1)
+        
+        self.client = OpenAI(api_key=self.api_key)
         self.temp_dir = None
         self.results = {}
         
@@ -35,15 +42,13 @@ class SingleFileAnalyzer:
         print(f"Copied {file_name} to temporary directory")
         return temp_file_path
     
-    def generate_ffi_wrapper(self, rust_code, api_key="your_openai_api_key_here"):
-        """Generate FFI wrapper for Rust code"""
+    def generate_ffi_wrapper(self, rust_code):
+        """Generate FFI wrapper using LLM"""
         try:
-            import openai
-            client = openai.OpenAI(api_key=api_key)
-            
             prompt = f"""
             Convert the following Rust code to FFI-compatible Rust code with pub extern "C" functions.
             Add #[no_mangle] attributes and ensure all functions are C-compatible.
+            Focus on making functions callable from C and suitable for KLEE analysis.
             
             Rust Code:
             {rust_code}
@@ -51,7 +56,7 @@ class SingleFileAnalyzer:
             Return only the FFI-wrapped Rust code, no explanations.
             """
             
-            response = client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=2000,
@@ -61,8 +66,8 @@ class SingleFileAnalyzer:
             return response.choices[0].message.content.strip()
             
         except Exception as e:
-            print(f"WARNING: LLM generation failed: {e}")
-            return self._generate_basic_ffi_wrapper(rust_code)
+            print(f"ERROR: LLM generation failed: {e}")
+            return None
     
     def _generate_basic_ffi_wrapper(self, rust_code):
         """Generate basic FFI wrapper without LLM"""
@@ -83,75 +88,75 @@ class SingleFileAnalyzer:
         return '\n'.join(ffi_lines)
     
     def generate_klee_wrapper(self, ffi_code, file_name):
-        """Generate KLEE C wrapper"""
-        klee_wrapper = f"""
-#include <klee/klee.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// KLEE wrapper for {file_name}
-extern "C" {{
-    // Add extern declarations for your Rust functions here
-    // Example: extern int your_function(int param);
-}}
-
-int main() {{
-    // KLEE symbolic variables
-    int symbolic_int = 0;
-    klee_make_symbolic(&symbolic_int, sizeof(symbolic_int), "symbolic_int");
-    
-    char symbolic_str[100];
-    klee_make_symbolic(symbolic_str, sizeof(symbolic_str), "symbolic_str");
-    
-    // Call your Rust functions with symbolic inputs
-    // Example: int result = your_function(symbolic_int);
-    
-    // Add assertions and error conditions
-    klee_assert(symbolic_int >= 0);
-    klee_assert(strlen(symbolic_str) < 100);
-    
-    return 0;
-}}
-"""
-        return klee_wrapper
+        """Generate KLEE C wrapper using LLM"""
+        try:
+            prompt = f"""
+            Generate a KLEE C wrapper for the following FFI Rust code.
+            Create a main() function that:
+            1. Uses klee_make_symbolic() to create symbolic variables
+            2. Calls the Rust functions with symbolic inputs
+            3. Includes appropriate assertions and error conditions
+            4. Is suitable for KLEE symbolic execution
+            
+            FFI Rust Code:
+            {ffi_code}
+            
+            Return only the C code, no explanations.
+            """
+            
+            response = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=2000,
+                temperature=0.1
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            print(f"ERROR: LLM KLEE wrapper generation failed: {e}")
+            return None
     
     def generate_fuzz_wrapper(self, ffi_code, file_name):
-        """Generate LibFuzzer wrapper"""
-        fuzz_wrapper = f"""
-use libfuzzer_sys::fuzz_target;
-
-// Fuzz target for {file_name}
-fuzz_target!(|data: &[u8]| {{
-    if data.len() < 4 {{
-        return;
-    }}
+        """Generate LibFuzzer wrapper using LLM"""
+        try:
+            prompt = f"""
+            Generate a LibFuzzer fuzz target for the following FFI Rust code.
+            Create a fuzz_target! macro that:
+            1. Takes input data as &[u8]
+            2. Converts input to appropriate types for the Rust functions
+            3. Calls the Rust functions with the converted input
+            4. Includes bounds checking and error handling
+            5. Is suitable for LibFuzzer dynamic analysis
+            
+            FFI Rust Code:
+            {ffi_code}
+            
+            Return only the Rust fuzz target code, no explanations.
+            """
+            
+            response = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=2000,
+                temperature=0.1
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            print(f"ERROR: LLM fuzz wrapper generation failed: {e}")
+            return None
     
-    // Convert input to appropriate types
-    let input_str = String::from_utf8_lossy(data);
-    let input_int = u32::from_le_bytes([
-        data[0], data[1], data[2], data[3]
-    ]);
-    
-    // Call your Rust functions
-    // Example: your_function(input_int);
-    
-    // Add bounds checking
-    if input_str.len() > 1000 {{
-        return;
-    }}
-}});
-"""
-        return fuzz_wrapper
-    
-    def compile_rust_code(self, rust_file_path):
+    def compile_rust_to_bitcode(self, rust_file_path):
         """Compile Rust code to LLVM bitcode"""
         try:
-            # Compile to LLVM bitcode
             bc_file = rust_file_path.replace('.rs', '.bc')
             compile_cmd = [
                 'rustc', '--emit=llvm-bc', 
-                '--crate-type=lib',
+                '--crate-type=staticlib',
+                '--target', 'x86_64-unknown-linux-gnu',
+                '-C', 'panic=abort',
                 '-o', bc_file,
                 rust_file_path
             ]
@@ -161,11 +166,52 @@ fuzz_target!(|data: &[u8]| {{
                 print(f"SUCCESS: Compiled to bitcode: {bc_file}")
                 return bc_file
             else:
-                print(f"ERROR: Compilation failed: {result.stderr}")
+                print(f"ERROR: Rust compilation failed: {result.stderr}")
                 return None
                 
         except Exception as e:
             print(f"ERROR: Compilation error: {e}")
+            return None
+    
+    def compile_c_to_bitcode(self, c_file_path):
+        """Compile C wrapper to LLVM bitcode"""
+        try:
+            bc_file = c_file_path.replace('.c', '.bc')
+            compile_cmd = [
+                'clang', '-emit-llvm', '-c',
+                '--target=x86_64-unknown-linux-gnu',
+                '-o', bc_file,
+                c_file_path
+            ]
+            
+            result = subprocess.run(compile_cmd, capture_output=True, text=True, cwd=self.temp_dir)
+            if result.returncode == 0:
+                print(f"SUCCESS: Compiled C to bitcode: {bc_file}")
+                return bc_file
+            else:
+                print(f"ERROR: C compilation failed: {result.stderr}")
+                return None
+                
+        except Exception as e:
+            print(f"ERROR: C compilation error: {e}")
+            return None
+    
+    def link_bitcode_files(self, rust_bc, c_bc):
+        """Link Rust and C bitcode files"""
+        try:
+            linked_bc = "linked.bc"
+            link_cmd = ['llvm-link', rust_bc, c_bc, '-o', linked_bc]
+            
+            result = subprocess.run(link_cmd, capture_output=True, text=True, cwd=self.temp_dir)
+            if result.returncode == 0:
+                print(f"SUCCESS: Linked bitcode files: {linked_bc}")
+                return linked_bc
+            else:
+                print(f"ERROR: Bitcode linking failed: {result.stderr}")
+                return None
+                
+        except Exception as e:
+            print(f"ERROR: Bitcode linking error: {e}")
             return None
     
     def run_klee_analysis(self, bc_file):
