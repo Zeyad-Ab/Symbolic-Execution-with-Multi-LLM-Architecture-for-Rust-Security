@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Dataset Evaluation Script
-Evaluates Positive and Negative datasets using the enhanced analyzer
+Evaluates Positive and Negative datasets using the original enhanced analyzer
 """
 import os
 import sys
@@ -12,7 +12,7 @@ import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime
-from enhanced_comprehensive_analyzer import EnhancedComprehensiveAnalyzer, ComprehensiveAnalysisConfig
+from simple_comprehensive_analyzer import analyze_comprehensive_dataset
 
 def analyze_single_file_enhanced(file_path):
     """Enhanced analysis of a single Rust file with sophisticated vulnerability detection"""
@@ -177,7 +177,7 @@ def analyze_single_file_enhanced(file_path):
         }
 
 def evaluate_datasets():
-    """Evaluate Positive and Negative datasets using enhanced analyzer"""
+    """Evaluate Positive and Negative datasets using the original enhanced analyzer"""
     print("DATASET EVALUATION")
     print("=" * 50)
     print("Evaluating Positive and Negative datasets")
@@ -189,31 +189,31 @@ def evaluate_datasets():
         print("Please ensure you have 'Positive' and 'Negative' folders with .rs files")
         return None
     
-    # Initialize enhanced analyzer with optimized settings
-    config = ComprehensiveAnalysisConfig()
-    config.max_parallel_workers = 8
-    config.confidence_threshold = 0.5  # Higher threshold for better precision
-    config.early_termination_threshold = 0.7
-    
-    analyzer = EnhancedComprehensiveAnalyzer(config)
-    
-    # Run enhanced analysis
-    print("Running enhanced analysis on both datasets...")
+    # Run the original enhanced comprehensive analysis
+    print("Running original enhanced comprehensive analysis...")
     start_time = time.time()
     
-    results = analyzer.run_enhanced_analysis("Positive", "Negative")
+    # Use the original enhanced analyzer
+    report = analyze_comprehensive_dataset("Positive", "Negative")
     
     analysis_time = time.time() - start_time
     
-    # Extract results
-    positive_results = results["positive"]
-    negative_results = results["negative"]
+    if not report:
+        print("ERROR: Analysis failed")
+        return None
     
-    # Calculate confusion matrix
-    tp = sum(1 for r in positive_results.values() if r.get("success", False) and r.get("total_vulnerabilities", 0) > 0)
-    tn = sum(1 for r in negative_results.values() if r.get("success", False) and r.get("total_vulnerabilities", 0) == 0)
-    fp = sum(1 for r in negative_results.values() if r.get("success", False) and r.get("total_vulnerabilities", 0) > 0)
-    fn = sum(1 for r in positive_results.values() if r.get("success", False) and r.get("total_vulnerabilities", 0) == 0)
+    # Extract results from the comprehensive report
+    detailed_results = report.get("detailed_results", {})
+    
+    # Separate positive and negative results
+    positive_results = {k: v for k, v in detailed_results.items() if v.get("dataset_type") == "positive"}
+    negative_results = {k: v for k, v in detailed_results.items() if v.get("dataset_type") == "negative"}
+    
+    # Calculate confusion matrix using the original analyzer's format
+    tp = sum(1 for r in positive_results.values() if r.get("success", False) and len(r.get("vulnerabilities", [])) > 0)
+    tn = sum(1 for r in negative_results.values() if r.get("success", False) and len(r.get("vulnerabilities", [])) == 0)
+    fp = sum(1 for r in negative_results.values() if r.get("success", False) and len(r.get("vulnerabilities", [])) > 0)
+    fn = sum(1 for r in positive_results.values() if r.get("success", False) and len(r.get("vulnerabilities", [])) == 0)
     
     # Calculate metrics
     total = tp + tn + fp + fn
