@@ -209,7 +209,7 @@ CRITICAL REQUIREMENTS:
             compile_cmd = [
                 'rustc', '--emit=llvm-bc', 
                 '--crate-type=staticlib',
-                '--target', 'x86_64-unknown-linux-gnu',
+                '--target', 'x86_64-apple-darwin',  # Use macOS target instead of Linux
                 '-C', 'panic=abort',
                 '-o', bc_file,
                 rust_file_path
@@ -232,7 +232,7 @@ CRITICAL REQUIREMENTS:
             bc_file = c_file_path.replace('.c', '.bc')
             compile_cmd = [
                 'clang', '-emit-llvm', '-c',
-                '--target=x86_64-unknown-linux-gnu',
+                '--target=x86_64-apple-darwin',  # Use macOS target instead of Linux
                 '-o', bc_file,
                 c_file_path
             ]
