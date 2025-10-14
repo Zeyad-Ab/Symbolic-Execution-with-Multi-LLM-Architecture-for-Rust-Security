@@ -299,14 +299,14 @@ fuzz_target!(|data: &[u8]| {{
             f.write(ffi_code)
         
         # Generate KLEE wrapper
-        print("🔄 Generating KLEE wrapper...")
+        print(" Generating KLEE wrapper...")
         klee_wrapper = self.generate_klee_wrapper(ffi_code, Path(file_path).name)
         klee_file = os.path.join(self.temp_dir, 'klee_wrapper.c')
         with open(klee_file, 'w') as f:
             f.write(klee_wrapper)
         
         # Compile to bitcode
-        print("🔄 Compiling to bitcode...")
+        print(" Compiling to bitcode...")
         bc_file = self.compile_rust_code(ffi_file)
         
         # Run KLEE analysis

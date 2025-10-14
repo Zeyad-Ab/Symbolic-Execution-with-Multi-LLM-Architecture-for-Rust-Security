@@ -1,15 +1,76 @@
 #!/usr/bin/env python3
 """
 Dataset Evaluation Script
-Evaluates Positive and Negative datasets using the enhanced analyzer
+Evaluates Positive and Negative datasets using the analyzer
 """
 import os
 import sys
 import time
 import json
+import subprocess
+import tempfile
+import shutil
 from pathlib import Path
 from datetime import datetime
-from enhanced_comprehensive_analyzer import EnhancedComprehensiveAnalyzer, ComprehensiveAnalysisConfig
+
+def analyze_single_file_simple(file_path):
+    """Simple analysis of a single Rust file"""
+    try:
+        # Create temporary directory
+        temp_dir = tempfile.mkdtemp(prefix="rust_analysis_")
+        temp_file_path = os.path.join(temp_dir, Path(file_path).name)
+        shutil.copy2(file_path, temp_file_path)
+        
+        # Read Rust code
+        with open(file_path, 'r') as f:
+            rust_code = f.read()
+        
+        # Simple vulnerability detection using pattern matching
+        vulnerabilities = 0
+        
+        # Check for common vulnerability patterns
+        unsafe_patterns = [
+            r'unsafe\s*{',  # unsafe blocks
+            r'std::ptr::',   # raw pointer operations
+            r'std::mem::',   # memory operations
+            r'std::slice::', # slice operations
+            r'std::str::from_utf8_unchecked',  # unchecked string operations
+            r'std::str::from_utf8_lossy',      # lossy string operations
+            r'std::ffi::CString::from_raw',    # raw C string operations
+            r'std::ffi::CStr::from_ptr',       # raw C string pointer operations
+        ]
+        
+        for pattern in unsafe_patterns:
+            import re
+            matches = re.findall(pattern, rust_code, re.IGNORECASE)
+            vulnerabilities += len(matches)
+        
+        # Check for specific vulnerability types
+        if 'unsafe' in rust_code.lower():
+            vulnerabilities += 1
+        if 'ptr::' in rust_code:
+            vulnerabilities += 1
+        if 'mem::' in rust_code:
+            vulnerabilities += 1
+        
+        # Cleanup
+        shutil.rmtree(temp_dir)
+        
+        return {
+            'file_path': file_path,
+            'file_name': Path(file_path).name,
+            'total_vulnerabilities': vulnerabilities,
+            'vulnerabilities_detected': vulnerabilities > 0,
+            'success': True
+        }
+        
+    except Exception as e:
+        return {
+            'file_path': file_path,
+            'file_name': Path(file_path).name,
+            'error': str(e),
+            'success': False
+        }
 
 def evaluate_datasets():
     """Evaluate Positive and Negative datasets"""
@@ -24,25 +85,35 @@ def evaluate_datasets():
         print("Please ensure you have 'Positive' and 'Negative' folders with .rs files")
         return None
     
-    # Initialize analyzer with optimized settings
-    config = ComprehensiveAnalysisConfig()
-    config.max_parallel_workers = 8
-    config.confidence_threshold = 0.1
-    config.early_termination_threshold = 0.15
+    # Find all Rust files
+    positive_files = []
+    negative_files = []
     
-    analyzer = EnhancedComprehensiveAnalyzer(config)
+    for file_path in Path("Positive").rglob("*.rs"):
+        positive_files.append(str(file_path))
+    
+    for file_path in Path("Negative").rglob("*.rs"):
+        negative_files.append(str(file_path))
+    
+    print(f"Found {len(positive_files)} positive files and {len(negative_files)} negative files")
     
     # Run analysis
     print("Running analysis on both datasets...")
     start_time = time.time()
     
-    results = analyzer.run_enhanced_analysis("Positive", "Negative")
+    # Analyze positive files
+    positive_results = {}
+    for file_path in positive_files:
+        result = analyze_single_file_simple(file_path)
+        positive_results[file_path] = result
+    
+    # Analyze negative files
+    negative_results = {}
+    for file_path in negative_files:
+        result = analyze_single_file_simple(file_path)
+        negative_results[file_path] = result
     
     analysis_time = time.time() - start_time
-    
-    # Extract results
-    positive_results = results["positive"]
-    negative_results = results["negative"]
     
     # Calculate confusion matrix
     tp = sum(1 for r in positive_results.values() if r.get("success", False) and r.get("total_vulnerabilities", 0) > 0)
@@ -138,11 +209,6 @@ def evaluate_datasets():
             "negative_files": len(negative_results),
             "successful_positive": sum(1 for r in positive_results.values() if r.get("success", False)),
             "successful_negative": sum(1 for r in negative_results.values() if r.get("success", False))
-        },
-        "config": {
-            "confidence_threshold": config.confidence_threshold,
-            "early_termination_threshold": config.early_termination_threshold,
-            "max_parallel_workers": config.max_parallel_workers
         }
     }
     
