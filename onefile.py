@@ -15,7 +15,7 @@ import json
 from datetime import datetime
 from openai import OpenAI
 
-class SingleFileAnalyzer:
+class RealSingleFileAnalyzer:
     """Real analyzer using LLM + KLEE + Fuzzing approach"""
     
     def __init__(self, api_key=None):
@@ -26,7 +26,6 @@ class SingleFileAnalyzer:
         
         self.client = OpenAI(api_key=self.api_key)
         self.temp_dir = None
-        self.results = {}
         
     def setup_temp_environment(self):
         """Setup temporary directory for analysis"""
@@ -42,7 +41,7 @@ class SingleFileAnalyzer:
         print(f"Copied {file_name} to temporary directory")
         return temp_file_path
     
-    def generate_ffi_wrapper(self, rust_code):
+    def generate_ffi_wrapper_llm(self, rust_code):
         """Generate FFI wrapper using LLM"""
         try:
             prompt = f"""
@@ -69,25 +68,7 @@ class SingleFileAnalyzer:
             print(f"ERROR: LLM generation failed: {e}")
             return None
     
-    def _generate_basic_ffi_wrapper(self, rust_code):
-        """Generate basic FFI wrapper without LLM"""
-        # Simple pattern-based FFI conversion
-        lines = rust_code.split('\n')
-        ffi_lines = []
-        
-        for line in lines:
-            if 'fn ' in line and 'pub ' not in line:
-                # Convert function to FFI
-                ffi_line = line.replace('fn ', 'pub extern "C" fn ')
-                ffi_line = ffi_line.replace(' -> ', ' -> ')
-                ffi_lines.append(f"    #[no_mangle]")
-                ffi_lines.append(f"    {ffi_line}")
-            else:
-                ffi_lines.append(line)
-        
-        return '\n'.join(ffi_lines)
-    
-    def generate_klee_wrapper(self, ffi_code, file_name):
+    def generate_klee_wrapper_llm(self, ffi_code, file_name):
         """Generate KLEE C wrapper using LLM"""
         try:
             prompt = f"""
@@ -117,7 +98,7 @@ class SingleFileAnalyzer:
             print(f"ERROR: LLM KLEE wrapper generation failed: {e}")
             return None
     
-    def generate_fuzz_wrapper(self, ffi_code, file_name):
+    def generate_fuzz_wrapper_llm(self, ffi_code, file_name):
         """Generate LibFuzzer wrapper using LLM"""
         try:
             prompt = f"""
@@ -214,8 +195,8 @@ class SingleFileAnalyzer:
             print(f"ERROR: Bitcode linking error: {e}")
             return None
     
-    def run_klee_analysis(self, bc_file):
-        """Run KLEE analysis"""
+    def run_klee_analysis(self, linked_bc):
+        """Run KLEE analysis on linked bitcode"""
         try:
             print("Running KLEE analysis...")
             klee_cmd = [
@@ -224,7 +205,7 @@ class SingleFileAnalyzer:
                 '--max-memory=1024',
                 '--max-instructions=10000',
                 '--max-tests=1000',
-                bc_file
+                linked_bc
             ]
             
             result = subprocess.run(klee_cmd, capture_output=True, text=True, cwd=self.temp_dir, timeout=120)
@@ -234,7 +215,8 @@ class SingleFileAnalyzer:
                 'stdout': result.stdout,
                 'stderr': result.stderr,
                 'test_cases': 0,
-                'errors': 0
+                'errors': 0,
+                'warnings': 0
             }
             
             # Parse KLEE results
@@ -246,185 +228,240 @@ class SingleFileAnalyzer:
                             klee_results['test_cases'] = int(line.split()[2])
                         except:
                             pass
-                    if 'errors' in line:
+                    if 'errors' in line.lower():
                         try:
                             klee_results['errors'] = int(line.split()[1])
                         except:
                             pass
             
-            print(f"SUCCESS: KLEE analysis completed: {klee_results['test_cases']} test cases, {klee_results['errors']} errors")
+            # Count error files
+            error_files = list(Path(self.temp_dir).glob("*.err"))
+            klee_results['errors'] = len(error_files)
+            
+            # Count warning files
+            warning_files = list(Path(self.temp_dir).glob("*.warn"))
+            klee_results['warnings'] = len(warning_files)
+            
+            print(f"KLEE Results: {klee_results['test_cases']} test cases, {klee_results['errors']} errors, {klee_results['warnings']} warnings")
             return klee_results
             
         except subprocess.TimeoutExpired:
-            print("TIMEOUT: KLEE analysis timed out")
-            return {'returncode': -1, 'stdout': '', 'stderr': 'Timeout', 'test_cases': 0, 'errors': 0}
+            print("WARNING: KLEE analysis timed out")
+            return {'returncode': -1, 'test_cases': 0, 'errors': 0, 'warnings': 0}
         except Exception as e:
-            print(f"ERROR: KLEE analysis error: {e}")
-            return {'returncode': -1, 'stdout': '', 'stderr': str(e), 'test_cases': 0, 'errors': 0}
+            print(f"ERROR: KLEE analysis failed: {e}")
+            return {'returncode': -1, 'test_cases': 0, 'errors': 0, 'warnings': 0}
     
-    def run_fuzzing_analysis(self, rust_file_path):
-        """Run fuzzing analysis"""
+    def run_fuzzing_analysis(self, fuzz_file):
+        """Run LibFuzzer analysis"""
         try:
-            print("Running fuzzing analysis...")
+            print("Running LibFuzzer analysis...")
             
-            # Create fuzz target
-            fuzz_target = rust_file_path.replace('.rs', '_fuzz.rs')
-            fuzz_wrapper = self.generate_fuzz_wrapper("", Path(rust_file_path).name)
+            # Create Cargo.toml for fuzzing
+            cargo_toml = """
+[package]
+name = "fuzz_target"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[[bin]]
+name = "fuzz_target"
+path = "fuzz_target.rs"
+"""
             
-            with open(fuzz_target, 'w') as f:
-                f.write(fuzz_wrapper)
+            with open(os.path.join(self.temp_dir, "Cargo.toml"), 'w') as f:
+                f.write(cargo_toml)
             
-            # Try to compile and run fuzzer
-            compile_cmd = ['cargo', 'fuzz', 'build', '--target', fuzz_target]
-            result = subprocess.run(compile_cmd, capture_output=True, text=True, cwd=self.temp_dir, timeout=60)
+            # Run cargo fuzz
+            fuzz_cmd = ['cargo', 'fuzz', 'run', 'fuzz_target', '--', '-max_total_time=60']
             
-            if result.returncode == 0:
-                # Run fuzzer
-                fuzz_cmd = ['cargo', 'fuzz', 'run', '--target', fuzz_target, '--', '-max_total_time=60']
-                fuzz_result = subprocess.run(fuzz_cmd, capture_output=True, text=True, cwd=self.temp_dir, timeout=120)
-                
-                fuzz_results = {
-                    'returncode': fuzz_result.returncode,
-                    'stdout': fuzz_result.stdout,
-                    'stderr': fuzz_result.stderr,
-                    'crashes': 0,
-                    'executions': 0
-                }
-                
-                # Parse fuzzer results
-                if 'executed' in fuzz_result.stdout:
-                    lines = fuzz_result.stdout.split('\n')
-                    for line in lines:
-                        if 'executed' in line:
-                            try:
-                                fuzz_results['executions'] = int(line.split()[1])
-                            except:
-                                pass
-                        if 'crashes' in line:
-                            try:
-                                fuzz_results['crashes'] = int(line.split()[1])
-                            except:
-                                pass
-                
-                print(f"SUCCESS: Fuzzing completed: {fuzz_results['executions']} executions, {fuzz_results['crashes']} crashes")
-                return fuzz_results
-            else:
-                print(f"ERROR: Fuzzer compilation failed: {result.stderr}")
-                return {'returncode': -1, 'stdout': '', 'stderr': 'Compilation failed', 'crashes': 0, 'executions': 0}
-                
+            result = subprocess.run(fuzz_cmd, capture_output=True, text=True, cwd=self.temp_dir, timeout=120)
+            
+            fuzz_results = {
+                'returncode': result.returncode,
+                'stdout': result.stdout,
+                'stderr': result.stderr,
+                'crashes': 0,
+                'executions': 0
+            }
+            
+            # Parse fuzzing results
+            if 'crashes' in result.stdout:
+                try:
+                    crash_line = [line for line in result.stdout.split('\n') if 'crashes' in line][0]
+                    fuzz_results['crashes'] = int(crash_line.split()[0])
+                except:
+                    pass
+            
+            if 'executions' in result.stdout:
+                try:
+                    exec_line = [line for line in result.stdout.split('\n') if 'executions' in line][0]
+                    fuzz_results['executions'] = int(exec_line.split()[0])
+                except:
+                    pass
+            
+            print(f"Fuzzing Results: {fuzz_results['crashes']} crashes, {fuzz_results['executions']} executions")
+            return fuzz_results
+            
         except subprocess.TimeoutExpired:
-            print("TIMEOUT: Fuzzing analysis timed out")
-            return {'returncode': -1, 'stdout': '', 'stderr': 'Timeout', 'crashes': 0, 'executions': 0}
+            print("WARNING: Fuzzing analysis timed out")
+            return {'returncode': -1, 'crashes': 0, 'executions': 0}
         except Exception as e:
-            print(f"ERROR: Fuzzing analysis error: {e}")
-            return {'returncode': -1, 'stdout': '', 'stderr': str(e), 'crashes': 0, 'executions': 0}
+            print(f"ERROR: Fuzzing analysis failed: {e}")
+            return {'returncode': -1, 'crashes': 0, 'executions': 0}
     
     def analyze_file(self, file_path):
-        """Analyze a single Rust file"""
-        print(f"Analyzing file: {file_path}")
+        """Analyze a single Rust file using real LLM + KLEE + Fuzzing approach"""
+        print(f"Analyzing: {Path(file_path).name}")
         
-        if not os.path.exists(file_path):
-            print(f"ERROR: File not found: {file_path}")
-            return None
-        
-        # Setup
-        self.setup_temp_environment()
-        temp_file_path = self.copy_file_to_temp(file_path)
-        
-        # Read Rust code
-        with open(file_path, 'r') as f:
-            rust_code = f.read()
-        
-        # Generate FFI wrapper
-        print("🔄 Generating FFI wrapper...")
-        ffi_code = self.generate_ffi_wrapper(rust_code)
-        
-        # Save FFI code
-        ffi_file = temp_file_path.replace('.rs', '_ffi.rs')
-        with open(ffi_file, 'w') as f:
-            f.write(ffi_code)
-        
-        # Generate KLEE wrapper
-        print(" Generating KLEE wrapper...")
-        klee_wrapper = self.generate_klee_wrapper(ffi_code, Path(file_path).name)
-        klee_file = os.path.join(self.temp_dir, 'klee_wrapper.c')
-        with open(klee_file, 'w') as f:
-            f.write(klee_wrapper)
-        
-        # Compile to bitcode
-        print(" Compiling to bitcode...")
-        bc_file = self.compile_rust_code(ffi_file)
-        
-        # Run KLEE analysis
-        klee_results = self.run_klee_analysis(bc_file) if bc_file else {'returncode': -1, 'test_cases': 0, 'errors': 0}
-        
-        # Run fuzzing analysis
-        fuzz_results = self.run_fuzzing_analysis(ffi_file)
-        
-        # Compile results
-        results = {
-            'file_path': file_path,
-            'analysis_time': datetime.now().isoformat(),
-            'klee_results': klee_results,
-            'fuzz_results': fuzz_results,
-            'vulnerabilities_detected': klee_results.get('errors', 0) > 0 or fuzz_results.get('crashes', 0) > 0,
-            'total_vulnerabilities': klee_results.get('errors', 0) + fuzz_results.get('crashes', 0)
-        }
-        
-        return results
-    
-    def cleanup(self):
-        """Cleanup temporary files"""
-        if self.temp_dir and os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
-            print(f"🧹 Cleaned up temporary directory: {self.temp_dir}")
-
-def main():
-    """Main function"""
-    if len(sys.argv) != 2:
-        print("Usage: python3 onefile.py <rust_file>")
-        print("Example: python3 onefile.py example.rs")
-        sys.exit(1)
-    
-    file_path = sys.argv[1]
-    
-    print("Single File Vulnerability Analyzer")
-    print("=" * 50)
-    print(f"Analyzing: {file_path}")
-    print()
-    
-    analyzer = SingleFileAnalyzer()
-    
-    try:
-        results = analyzer.analyze_file(file_path)
-        
-        if results:
-            print("\nANALYSIS RESULTS")
-            print("=" * 30)
-            print(f"File: {results['file_path']}")
-            print(f"Analysis Time: {results['analysis_time']}")
-            print(f"KLEE Test Cases: {results['klee_results'].get('test_cases', 0)}")
-            print(f"KLEE Errors: {results['klee_results'].get('errors', 0)}")
-            print(f"Fuzz Executions: {results['fuzz_results'].get('executions', 0)}")
-            print(f"Fuzz Crashes: {results['fuzz_results'].get('crashes', 0)}")
-            print(f"Vulnerabilities Detected: {'Yes' if results['vulnerabilities_detected'] else 'No'}")
-            print(f"Total Vulnerabilities: {results['total_vulnerabilities']}")
+        try:
+            # Setup
+            self.setup_temp_environment()
+            temp_file_path = self.copy_file_to_temp(file_path)
+            
+            # Read Rust code
+            with open(file_path, 'r') as f:
+                rust_code = f.read()
+            
+            # Step 1: Generate FFI wrapper using LLM
+            print("Step 1: Generating FFI wrapper using LLM...")
+            ffi_code = self.generate_ffi_wrapper_llm(rust_code)
+            if not ffi_code:
+                print("ERROR: Failed to generate FFI wrapper")
+                return None
+            
+            ffi_file = temp_file_path.replace('.rs', '_ffi.rs')
+            with open(ffi_file, 'w') as f:
+                f.write(ffi_code)
+            print("SUCCESS: FFI wrapper generated")
+            
+            # Step 2: Generate KLEE wrapper using LLM
+            print("Step 2: Generating KLEE wrapper using LLM...")
+            klee_code = self.generate_klee_wrapper_llm(ffi_code, Path(file_path).name)
+            if not klee_code:
+                print("ERROR: Failed to generate KLEE wrapper")
+                return None
+            
+            klee_file = os.path.join(self.temp_dir, 'klee_wrapper.c')
+            with open(klee_file, 'w') as f:
+                f.write(klee_code)
+            print("SUCCESS: KLEE wrapper generated")
+            
+            # Step 3: Generate Fuzzing wrapper using LLM
+            print("Step 3: Generating Fuzzing wrapper using LLM...")
+            fuzz_code = self.generate_fuzz_wrapper_llm(ffi_code, Path(file_path).name)
+            if not fuzz_code:
+                print("ERROR: Failed to generate Fuzzing wrapper")
+                return None
+            
+            fuzz_file = os.path.join(self.temp_dir, 'fuzz_target.rs')
+            with open(fuzz_file, 'w') as f:
+                f.write(fuzz_code)
+            print("SUCCESS: Fuzzing wrapper generated")
+            
+            # Step 4: Compile Rust to bitcode
+            print("Step 4: Compiling Rust to bitcode...")
+            rust_bc = self.compile_rust_to_bitcode(ffi_file)
+            if not rust_bc:
+                print("ERROR: Failed to compile Rust to bitcode")
+                return None
+            
+            # Step 5: Compile C wrapper to bitcode
+            print("Step 5: Compiling C wrapper to bitcode...")
+            c_bc = self.compile_c_to_bitcode(klee_file)
+            if not c_bc:
+                print("ERROR: Failed to compile C wrapper to bitcode")
+                return None
+            
+            # Step 6: Link bitcode files
+            print("Step 6: Linking bitcode files...")
+            linked_bc = self.link_bitcode_files(rust_bc, c_bc)
+            if not linked_bc:
+                print("ERROR: Failed to link bitcode files")
+                return None
+            
+            # Step 7: Run KLEE analysis
+            print("Step 7: Running KLEE symbolic execution...")
+            klee_results = self.run_klee_analysis(linked_bc)
+            
+            # Step 8: Run Fuzzing analysis
+            print("Step 8: Running LibFuzzer dynamic analysis...")
+            fuzz_results = self.run_fuzzing_analysis(fuzz_file)
+            
+            # Step 9: Compile results
+            results = {
+                'file_path': file_path,
+                'file_name': Path(file_path).name,
+                'analysis_time': datetime.now().isoformat(),
+                'klee_results': klee_results,
+                'fuzz_results': fuzz_results,
+                'vulnerabilities_detected': klee_results.get('errors', 0) > 0 or fuzz_results.get('crashes', 0) > 0,
+                'total_vulnerabilities': klee_results.get('errors', 0) + fuzz_results.get('crashes', 0),
+                'success': True
+            }
             
             # Save results
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             results_file = f"analysis_results_{timestamp}.json"
             with open(results_file, 'w') as f:
                 json.dump(results, f, indent=2)
-            print(f"\nResults saved to: {results_file}")
-        else:
-            print("ERROR: Analysis failed")
             
-    except KeyboardInterrupt:
-        print("\nAnalysis interrupted by user")
-    except Exception as e:
-        print(f"ERROR: Analysis error: {e}")
-    finally:
-        analyzer.cleanup()
+            print(f"SUCCESS: Analysis completed. Results saved to {results_file}")
+            return results
+            
+        except Exception as e:
+            print(f"ERROR: Analysis failed: {e}")
+            return None
+        finally:
+            # Cleanup
+            if self.temp_dir and os.path.exists(self.temp_dir):
+                shutil.rmtree(self.temp_dir)
+                print("Cleaned up temporary directory")
+
+def main():
+    """Main entry point"""
+    if len(sys.argv) != 2:
+        print("Usage: python3 onefile.py <rust_file>")
+        sys.exit(1)
+    
+    file_path = sys.argv[1]
+    if not os.path.exists(file_path):
+        print(f"ERROR: File not found: {file_path}")
+        sys.exit(1)
+    
+    if not file_path.endswith('.rs'):
+        print("ERROR: File must be a Rust source file (.rs)")
+        sys.exit(1)
+    
+    # Check for API key
+    if not os.environ.get("OPENAI_API_KEY"):
+        print("ERROR: OPENAI_API_KEY environment variable not set")
+        print("Please set your OpenAI API key: export OPENAI_API_KEY='your-key-here'")
+        sys.exit(1)
+    
+    # Run analysis
+    analyzer = RealSingleFileAnalyzer()
+    results = analyzer.analyze_file(file_path)
+    
+    if results:
+        print("\n" + "="*60)
+        print("ANALYSIS RESULTS")
+        print("="*60)
+        print(f"File: {results['file_name']}")
+        print(f"Vulnerabilities Detected: {results['vulnerabilities_detected']}")
+        print(f"Total Vulnerabilities: {results['total_vulnerabilities']}")
+        print(f"KLEE Errors: {results['klee_results']['errors']}")
+        print(f"KLEE Warnings: {results['klee_results']['warnings']}")
+        print(f"KLEE Test Cases: {results['klee_results']['test_cases']}")
+        print(f"Fuzzing Crashes: {results['fuzz_results']['crashes']}")
+        print(f"Fuzzing Executions: {results['fuzz_results']['executions']}")
+        print("="*60)
+    else:
+        print("ERROR: Analysis failed")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
