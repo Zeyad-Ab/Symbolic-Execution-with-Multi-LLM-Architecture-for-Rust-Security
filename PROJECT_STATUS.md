@@ -9,11 +9,10 @@
 4. **Implementation Testing**: All new implementations tested and working
 
 ### **Real Implementation Files:**
-- **`onefile_new.py`**: Real single file analysis with LLM + KLEE + Fuzzing
-- **`allrust_new.py`**: Real folder analysis with parallel processing  
-- **`evaluate_datasets_new.py`**: Real dataset evaluation with confusion matrix
-- **`onefile.py`**: Updated to use real approach
-- **`allrust.py`**: Updated to use real approach
+- **`onefile.py`**: Real single file analysis with LLM + KLEE + Fuzzing
+- **`allrust.py`**: Real folder analysis with parallel processing  
+- **`evaluate_datasets.py`**: Real dataset evaluation with confusion matrix
+- **`rust_vulnerability_analyzer.py`**: Original comprehensive analyzer
 
 ### **Key Features:**
 1. **Real LLM Integration**: Uses OpenAI GPT-3.5-turbo for intelligent code transformation
@@ -33,24 +32,22 @@ export OPENAI_API_KEY="your-key-here"
 source venv/bin/activate
 
 # Single file analysis
-python3 onefile_new.py example.rs
+python3 onefile.py example.rs
 
 # Folder analysis
-python3 allrust_new.py /path/to/rust/folder
+python3 allrust.py /path/to/rust/folder
 
 # Dataset evaluation
-python3 evaluate_datasets_new.py
+python3 evaluate_datasets.py
 ```
 
 ### **Project Structure:**
 ```
 PROJECT ZOBRE/
-├── onefile_new.py              # Real single file analysis
-├── allrust_new.py              # Real folder analysis
-├── evaluate_datasets_new.py    # Real dataset evaluation
-├── onefile.py                  # Updated single file analysis
-├── allrust.py                  # Updated folder analysis
-├── evaluate_datasets.py        # Updated dataset evaluation
+├── onefile.py                  # Real single file analysis
+├── allrust.py                  # Real folder analysis
+├── evaluate_datasets.py        # Real dataset evaluation
+├── rust_vulnerability_analyzer.py  # Original comprehensive analyzer
 ├── Positive/                   # 82 vulnerable Rust files
 ├── Negative/                   # 82 clean Rust files
 ├── requirements.txt            # Dependencies
