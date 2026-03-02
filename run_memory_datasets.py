@@ -17,8 +17,8 @@ def run_memory_datasets():
         'summary': {}
     }
 
-    positive_files = sorted(Path("Positive").glob("*.rs"))
-    print(f"Processing {len(positive_files)} files from Positive/...")
+    positive_files = sorted(Path("Positive_Memory").glob("*.rs"))
+    print(f"Processing {len(positive_files)} files from Positive_Memory/...")
 
     for i, file_path in enumerate(positive_files, 1):
         print(f"Generating FFI for file {i}/{len(positive_files)}: {file_path.name}")

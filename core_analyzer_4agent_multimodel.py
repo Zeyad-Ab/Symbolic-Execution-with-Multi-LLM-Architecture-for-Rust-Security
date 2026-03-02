@@ -307,7 +307,7 @@ int main() {{
 
 if __name__ == "__main__":
     analyzer = CoreAnalyzer4AgentMultiModel()
-    test_file = "Positive/CVE-2019-15550_CWE-125.rs"
+    test_file = "Positive_Memory/CVE-2019-15550_CWE-125.rs"
     if os.path.exists(test_file):
         result = analyzer.analyze_single_file_4agent(test_file, "positive")
         print("Analysis complete:", result.get('total_vulnerabilities', 0), "vulnerabilities")

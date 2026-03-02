@@ -5,12 +5,13 @@ This repository contains the dataset and analyzers for replicating experiments o
 ## Repository Structure
 
 ```
-Positive/                             # Dataset: Rust CVE snippet files (.rs)
-core_analyzer_4agent_multimodel.py    # 4-agent pipeline (Oracle, Safety Checker, Code Specialist, Fast Filter)
-core_analyzer_working_fixed.py        # Single-agent baseline (one LLM per run)
-run_memory_datasets.py                # Run 4-agent on all Positive files
-test_all_models.py                   # Run single-agent with each of 7 LLM models
+Positive_Memory/                      # Dataset: CVE .rs files
+core_analyzer_4agent_multimodel.py    # 4-agent pipeline
+core_analyzer_working_fixed.py        # Single-agent baseline
+run_memory_datasets.py                # Run 4-agent on full dataset
+test_all_models.py                   # Run single-agent (all models)
 requirements.txt
+.gitignore
 ```
 
 ## Requirements
@@ -26,18 +27,20 @@ requirements.txt
 1. Clone the repository.
 
 2. Install Python dependencies:
+
    ```
    pip install -r requirements.txt
    ```
 
 3. Create a `.env` file in the project root with your API keys (do not commit this file):
+
    ```
    OPENAI_API_KEY=your_openai_key
    ANTHROPIC_API_KEY=your_anthropic_key
    GEMINI_API_KEY=your_google_key
    ```
 
-4. Ensure KLEE, LLVM, and Rust are installed and on your PATH. The scripts expect `rustc`, `clang`, `llvm-link`, and `klee` to be available. Paths to KLEE include and LLVM tools can be adjusted inside the analyzer files if needed.
+4. Ensure KLEE, LLVM, and Rust are installed and on your PATH. Paths can be adjusted inside the analyzer files if needed.
 
 ## Replicating Experiments
 
@@ -49,7 +52,7 @@ Run the full dataset through the 4-agent analyzer:
 python run_memory_datasets.py
 ```
 
-Outputs are written under `4agent_output/`. The script processes all `.rs` files in `Positive/`.
+Outputs are written under `4agent_output/`. The script processes all `.rs` files in `Positive_Memory/`.
 
 ### Single-agent baselines (7 models)
 
@@ -59,7 +62,7 @@ Run each of the 7 LLM models on the same dataset:
 python test_all_models.py
 ```
 
-Outputs are written under `{model_name}_output/` (e.g. `gpt4-turbo_output/`, `claude-sonnet_output/`).
+Outputs are written under `{model_name}_output/`.
 
 ### Single file (4-agent)
 
@@ -67,7 +70,7 @@ Outputs are written under `{model_name}_output/` (e.g. `gpt4-turbo_output/`, `cl
 from core_analyzer_4agent_multimodel import CoreAnalyzer4AgentMultiModel
 
 analyzer = CoreAnalyzer4AgentMultiModel()
-result = analyzer.analyze_single_file_4agent("Positive/CVE-2020-35904_CWE-131.rs", "positive")
+result = analyzer.analyze_single_file_4agent("Positive_Memory/CVE-2020-35904_CWE-131.rs", "positive")
 ```
 
 ### Single file (single-agent)
@@ -76,12 +79,12 @@ result = analyzer.analyze_single_file_4agent("Positive/CVE-2020-35904_CWE-131.rs
 from core_analyzer_working_fixed import CoreAnalyzerWorking
 
 analyzer = CoreAnalyzerWorking(model_name="gpt4o-mini")
-result = analyzer.analyze_single_file_working("Positive/CVE-2020-35904_CWE-131.rs", "positive")
+result = analyzer.analyze_single_file_working("Positive_Memory/CVE-2020-35904_CWE-131.rs", "positive")
 ```
 
 ## Dataset
 
-`Positive/` contains Rust CVE files. Each file is an incomplete CVE code snippet (missing imports, type definitions, or context). The analyzers use LLMs to generate compilable FFI wrappers and then run KLEE to detect memory violations.
+`Positive_Memory/` contains Rust CVE snippet files. Each file is an incomplete snippet (missing imports, type definitions, or context). The analyzers use LLMs to generate compilable FFI wrappers and then run KLEE to detect memory violations.
 
 ## Output Layout
 
@@ -89,7 +92,3 @@ result = analyzer.analyze_single_file_working("Positive/CVE-2020-35904_CWE-131.r
 - **Single-agent:** `{model_name}_output/positive/` with the same structure.
 
 KLEE produces `.ptr.err`, `.external.err`, and related files; the scripts aggregate these into vulnerability counts.
-
-## License
-
-See LICENSE file if present.

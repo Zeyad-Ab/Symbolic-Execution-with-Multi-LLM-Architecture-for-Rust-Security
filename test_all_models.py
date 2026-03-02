@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run single-agent analyzer with each of the 7 LLM models on the Positive/ dataset."""
+"""Run single-agent analyzer with each of the 7 LLM models on the Positive_Memory dataset."""
 
 import os
 import sys
@@ -11,15 +11,15 @@ from core_analyzer_working_fixed import CoreAnalyzerWorking
 MODELS = ['gpt4-turbo', 'gpt4o-mini', 'gpt5.2', 'claude-opus', 'claude-sonnet', 'gemini-2', 'gemini-3']
 
 def main():
-    test_dir = Path('Positive')
+    test_dir = Path('Positive_Memory')
     if not test_dir.exists():
-        print("Error: Positive/ directory not found")
+        print("Error: Positive_Memory directory not found")
         return
     files = sorted(test_dir.glob('*.rs'))
     if not files:
-        print("No .rs files in Positive/")
+        print("No .rs files in Positive_Memory")
         return
-    print(f"Testing {len(MODELS)} models on {len(files)} files from Positive/")
+    print(f"Testing {len(MODELS)} models on {len(files)} files from Positive_Memory")
     for model in MODELS:
         print(f"\n--- Model: {model} ---")
         try:
