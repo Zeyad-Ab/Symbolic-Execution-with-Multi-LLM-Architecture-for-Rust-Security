@@ -1,141 +1,95 @@
-# Cracking Unsafe Rust: A Hybrid Symbolic Execution and Fuzzing Approach
+# Symbolic Execution with Multi-LLM Architecture for Rust Security
 
-A comprehensive vulnerability analysis tool for Rust code using KLEE symbolic execution and LibFuzzer dynamic analysis.
+This repository contains the dataset and analyzers for replicating experiments on memory vulnerability detection in Rust using a 4-agent multi-LLM pipeline and KLEE symbolic execution.
 
-## Features
-
-- **Single File Analysis**: Analyze individual Rust files for vulnerabilities
-- **Batch Analysis**: Process entire folders of Rust code
-- **Hybrid Approach**: Combines KLEE symbolic execution with LibFuzzer fuzzing
-- **Dataset Evaluation**: Test on Positive and Negative vulnerability datasets
-- **Comprehensive Reporting**: Detailed vulnerability reports with metrics
-
-## Project Structure
+## Repository Structure
 
 ```
-fuzzing+klee/
-├── onefile.py              # Single file analyzer
-├── allrust.py              # Folder analyzer
-├── evaluate_datasets.py    # Dataset evaluation script
-├── config.yaml             # Configuration file
-├── requirements.txt        # Python dependencies
-├── setup.py               # Project setup script
-├── env.template           # Environment variables template
-├── LICENSE                # MIT License
-├── Positive/              # Vulnerable Rust files (82 files)
-├── Negative/              # Clean Rust files (82 files)
-└── README.md              # This file
+Positive/                             # Dataset: Rust CVE snippet files (.rs)
+core_analyzer_4agent_multimodel.py    # 4-agent pipeline (Oracle, Safety Checker, Code Specialist, Fast Filter)
+core_analyzer_working_fixed.py        # Single-agent baseline (one LLM per run)
+run_memory_datasets.py                # Run 4-agent on all Positive files
+test_all_models.py                   # Run single-agent with each of 7 LLM models
+requirements.txt
 ```
-
-## Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd fuzzing+klee
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Setup environment**:
-   ```bash
-   cp env.template .env
-   # Edit .env with your API keys
-   ```
-
-## Usage
-
-### Single File Analysis
-```bash
-python3 onefile.py example.rs
-```
-
-### Folder Analysis
-```bash
-python3 allrust.py ./rust_code/
-```
-
-### Dataset Evaluation
-```bash
-python3 evaluate_datasets.py
-```
-
-## Evaluation Dataset
-
-The project includes comprehensive evaluation datasets for testing and validation:
-
-### Positive Dataset (82 files)
-- **Source**: Real-world vulnerable Rust files from CVE database
-- **Purpose**: Test vulnerability detection capabilities
-- **Content**: Authentic security vulnerabilities including buffer overflows, use-after-free, memory leaks, and other common Rust security issues
-- **Format**: Rust source files (.rs) with corresponding vulnerability analysis files (.txt)
-
-### Negative Dataset (82 files)
-- **Source**: Clean Rust files with no known vulnerabilities
-- **Purpose**: Test false positive rates and precision
-- **Content**: Well-written, secure Rust code examples
-- **Format**: Rust source files (.rs) with corresponding analysis files (.txt)
-
-### Dataset Evaluation Results
-- **Total Files**: 164 Rust files (82 vulnerable + 82 clean)
-- **Detection Rate**: 67.1% (55/82 vulnerable files detected)
-- **Precision**: 100% (no false positives)
-- **Specificity**: 100% (all clean files correctly identified)
-- **Accuracy**: 83.5% overall performance
-- **F1 Score**: 80.4% balanced performance
-
-## Results
-
-The tools generate comprehensive reports including:
-- **Vulnerability Detection**: KLEE errors and fuzzing crashes
-- **Performance Metrics**: Analysis time and throughput
-- **Confusion Matrix**: TP, TN, FP, FN metrics
-- **Quality Assessment**: Accuracy, precision, recall, specificity
 
 ## Requirements
 
-- **Rust Compiler** (`rustc`)
-- **KLEE** symbolic execution engine
-- **LibFuzzer** (via `cargo fuzz`)
-- **Python 3.6+**
-- **OpenAI API Key** (for LLM-based code generation)
+- Python 3.9+
+- Rust toolchain (rustc)
+- LLVM and Clang (e.g. LLVM 16)
+- KLEE symbolic execution engine (e.g. 3.x)
+- API keys: OpenAI, Anthropic, Google (for single-agent baselines)
 
-## Performance
+## Setup
 
-- **Analysis Speed**: 200-300 files/second
-- **Detection Rate**: 67.1% on vulnerability datasets
-- **Accuracy**: 83.5% overall performance
-- **Precision**: 100% (no false positives)
-- **Recall**: 67.1% (good vulnerability detection)
+1. Clone the repository.
 
-## Use Cases
+2. Install Python dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
 
-- **Security Auditing**: Identify vulnerabilities in Rust codebases
-- **Research**: Academic research on vulnerability detection
-- **CI/CD Integration**: Automated security testing in pipelines
-- **Code Review**: Assist developers in finding security issues
+3. Create a `.env` file in the project root with your API keys (do not commit this file):
+   ```
+   OPENAI_API_KEY=your_openai_key
+   ANTHROPIC_API_KEY=your_anthropic_key
+   GEMINI_API_KEY=your_google_key
+   ```
+
+4. Ensure KLEE, LLVM, and Rust are installed and on your PATH. The scripts expect `rustc`, `clang`, `llvm-link`, and `klee` to be available. Paths to KLEE include and LLVM tools can be adjusted inside the analyzer files if needed.
+
+## Replicating Experiments
+
+### 4-agent pipeline (main approach)
+
+Run the full dataset through the 4-agent analyzer:
+
+```
+python run_memory_datasets.py
+```
+
+Outputs are written under `4agent_output/`. The script processes all `.rs` files in `Positive/`.
+
+### Single-agent baselines (7 models)
+
+Run each of the 7 LLM models on the same dataset:
+
+```
+python test_all_models.py
+```
+
+Outputs are written under `{model_name}_output/` (e.g. `gpt4-turbo_output/`, `claude-sonnet_output/`).
+
+### Single file (4-agent)
+
+```python
+from core_analyzer_4agent_multimodel import CoreAnalyzer4AgentMultiModel
+
+analyzer = CoreAnalyzer4AgentMultiModel()
+result = analyzer.analyze_single_file_4agent("Positive/CVE-2020-35904_CWE-131.rs", "positive")
+```
+
+### Single file (single-agent)
+
+```python
+from core_analyzer_working_fixed import CoreAnalyzerWorking
+
+analyzer = CoreAnalyzerWorking(model_name="gpt4o-mini")
+result = analyzer.analyze_single_file_working("Positive/CVE-2020-35904_CWE-131.rs", "positive")
+```
+
+## Dataset
+
+`Positive/` contains Rust CVE files. Each file is an incomplete CVE code snippet (missing imports, type definitions, or context). The analyzers use LLMs to generate compilable FFI wrappers and then run KLEE to detect memory violations.
+
+## Output Layout
+
+- **4-agent:** `4agent_output/positive/` with `ffi/`, `wrappers/`, and `klee_output/` subdirs.
+- **Single-agent:** `{model_name}_output/positive/` with the same structure.
+
+KLEE produces `.ptr.err`, `.external.err`, and related files; the scripts aggregate these into vulnerability counts.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## Support
-
-For questions or issues, please open an issue on GitHub.
-
----
-
-**Author**: Zeyad Abdelrazek  
-**Advisor**: Young Lee  
-**Institution**: Texas A&M San Antonio  
-**Research**: Cracking Unsafe Rust: A Hybrid Symbolic Execution and Fuzzing Approach
+See LICENSE file if present.

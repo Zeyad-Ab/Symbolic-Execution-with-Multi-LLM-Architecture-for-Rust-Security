@@ -3,6 +3,8 @@
 
 # Core LLM integration
 openai>=2.0.0
+anthropic>=0.18.0
+google-generativeai>=0.3.0
 
 # Remote execution and SSH
 paramiko>=4.0.0

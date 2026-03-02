@@ -48,6 +48,9 @@ Thumbs.db
 results/
 reports/
 temp/
+4agent_output/
+4agent_output_v2/
+*_output/
 *.json
 *.html
 *.pdf
