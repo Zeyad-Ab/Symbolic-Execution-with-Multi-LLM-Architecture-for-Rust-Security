@@ -13,7 +13,7 @@ This tool parses a KLEE output directory and loads the results into Neo4j so you
 Some macOS Python installations block system-wide `pip install`. Use a virtual environment:
 
 ```bash
-cd "Symbolic-Execution-with-Multi-LLM-Architecture-for-Rust-Security-main"
+cd "/path/to/your/repo"
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -U pip

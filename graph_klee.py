@@ -779,8 +779,9 @@ def main():
     if len(sys.argv) > 1:
         klee_output_dir = sys.argv[1]
     else:
-        klee_output_dir = "/Users/leo/Downloads/PROJECT ZOBRE/klee-out-35"  # Default
-        print(f"No directory specified, using default: {klee_output_dir}")
+        print("Usage: python3 graph_klee.py <klee-output-directory>")
+        print("Example: python3 graph_klee.py 4agent_output/positive/klee_output/cwe-131-cve-2020-35904")
+        sys.exit(1)
     
     # Check if directory exists
     if not os.path.exists(klee_output_dir):
